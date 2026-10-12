@@ -185,3 +185,59 @@ def test_rows_no_longer_extracted_are_retracted(tmp_path):
     assert tuple(last) == (2, "retracted", "correction")
     # retracting is idempotent
     assert load_units(con, rows[:2], recorded_at="2026-10-12T08:00:00+00:00", **kw)["retracted"] == 0
+
+
+# Real Tesseract output from scanned DEQ permits (cells interleave line by line).
+SCAN_CORESITE = """Equipment List -
+Equipment to be constructed:
+EG-16 Five (5) Caterpillar diesel 2,000 kW 9 VAC 5-50-410
+thru fired engine generator sets, (2937 bhp) and
+EG-20 Model # 3516C each 9 VAC 5-60-100
+Equipment permitted prior to this permit:
+Four (4) Caterpillar diesel-
+1, 2, 3, and 4 | fired engine generator sets, aaeee 9 VAC 5-60-100
+Model # 3516
+Equipment exempt from air permitting:
+11 and 12 water heaters 0.25 million Btu/nr each 9 VAC 5-80-1105 B.1.
+"""
+SCAN_VIENNA = """Equipment List - Equipment at this facility consists of:
+Equipment to be Constructed:
+Five (5) Cummins 900DQFAD | 900 ekW Non
+1-5 emergency diesel engine- 1,482 bhp
+generator sets (each unit)
+6-8 Three (3) Cummins 1,365 ekW N
+: 1,365DQGAB emergency 2,200 bhp ume
+diesel engine-generator sets (each unit)
+"""
+SCAN_DP = """Equipment List - Equipment at this facility consists of the following:
+Equipment to be constructed:
+EGO1—-— | (6) Cummins QSK78-G12 diesel-fueled 2500 kW
+EGO6 engine-generator sets 4060 hp (nam eplate) 8/23/2016
+Cummins QSK19-G8 diesel-fueled engine- 600 kw
+EGO7 generator set 967 hp (nameplate) 8/23/2016
+"""
+
+
+def test_scan_id_column_thru_and_numeric_lists():
+    rows = extract([(4, SCAN_CORESITE)], ocr_pages=frozenset({4}))
+    got = [(r.ref_ids, r.count, r.section, r.unit_kw) for r in rows]
+    assert got[0] == (["EG-16", "EG-17", "EG-18", "EG-19", "EG-20"], 5, "new", 2000)
+    assert got[1][:3] == (["1", "2", "3", "4"], 4, "existing")
+    assert rows[1].held                     # kW unreadable ('aaeee') -> held, not guessed
+    assert rows[2].section == "exempt" and rows[2].equipment_class == "boiler"
+
+
+def test_scan_count_printed_above_ids():
+    rows = extract([(4, SCAN_VIENNA)], ocr_pages=frozenset({4}))
+    assert [(r.ref_ids, r.count, r.unit_kw) for r in rows] == [
+        (["1", "2", "3", "4", "5"], 5, 900), (["6", "7", "8"], 3, 1365)]
+
+
+def test_scan_ocr_noise_in_ids_and_maker_starts_row():
+    rows = extract([(4, SCAN_DP)], ocr_pages=frozenset({4}))
+    assert [(len(r.ref_ids), r.count, r.model) for r in rows] == [(6, 6, "QSK78-G12"), (1, 1, "QSK19-G8")]
+
+
+def test_scan_rules_do_not_apply_to_digital_pages():
+    # same text without the OCR flag: numeric 'Five (5)' line must not split digital rows
+    assert [r.count for r in extract([(5, MODERN)], ocr_pages=frozenset({5}))] == [6, 40, 1]

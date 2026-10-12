@@ -23,7 +23,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from .extract import extract
-from .ocr import OCR_DIR
+from .ocr import OCR_DIR, ocr_page_numbers
 
 EVAL_DIR = Path(__file__).resolve().parents[2] / "eval"
 FIELDS = ["count", "equipment_class", "manufacturer", "model", "unit_kw", "section", "ref_ids"]
@@ -95,7 +95,7 @@ def evaluate() -> dict:
         ocr_dir = OCR_DIR / s["sha256"]
         pages = [(int(p.stem[5:8]), p.read_text())
                  for p in sorted(ocr_dir.glob("page-[0-9][0-9][0-9].txt"))]
-        preds = extract(pages)
+        preds = extract(pages, ocr_page_numbers(s["sha256"]))
         g_ids = [gold_ids(g["ref_ids"]) for g in golds]
         p_ids = [{canon_id(x) for x in p.ref_ids} for p in preds]
         pairs = sorted(((_jaccard(g_ids[i], p_ids[j]), i, j)

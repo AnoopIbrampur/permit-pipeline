@@ -89,3 +89,11 @@ def page_texts(pdf_path: Path, sha: str, force: bool = False) -> list[dict]:
     for m in meta:
         m["text"] = (out_dir / f"page-{m['page']:03d}.txt").read_text()
     return meta
+
+
+def ocr_page_numbers(sha: str) -> frozenset[int]:
+    """Pages of a document whose text came from Tesseract rather than the PDF."""
+    meta_path = OCR_DIR / sha / "meta.json"
+    if not meta_path.exists():
+        return frozenset()
+    return frozenset(m["page"] for m in json.loads(meta_path.read_text()) if m["method"] == "ocr")

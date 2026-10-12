@@ -98,7 +98,7 @@ def cmd_ocr(args) -> None:
 
 def cmd_extract(args) -> None:
     from .extract import extract, load_units
-    from .ocr import OCR_DIR
+    from .ocr import OCR_DIR, ocr_page_numbers
 
     con = store.connect()
     now = store.utcnow()
@@ -114,7 +114,7 @@ def cmd_extract(args) -> None:
             continue
         pages = [(int(p.stem[5:8]), p.read_text())
                  for p in sorted(ocr_dir.glob("page-[0-9][0-9][0-9].txt"))]
-        rows = extract(pages)
+        rows = extract(pages, ocr_page_numbers(d["sha256"]))
         site_id = "VA-" + d["listing_key"].split("-")[0]
         stats = load_units(con, rows, site_id=site_id, source_sha=d["sha256"],
                            first_seen_at=d["retrieved_at"], published_at=d["issued_on"],

@@ -9,6 +9,7 @@
   (`pages/`), not from the OCR text the extractor reads. First pass labelled by Claude;
   needs a human spot-check before the numbers are quoted.
 - `baseline-2026-10-12.txt`: first full run.
+- `after-fixes-2026-10-12.txt`: after fixing the failure modes the baseline found.
 
 ## Baseline (2026-10-12)
 
@@ -38,7 +39,33 @@ count 95%, IDs 95%, model 66%.
 2. Model printed after the rating ("Caterpillar 2,500 kWe Model 3516C"): 12 rows.
 3. Unit IDs with no digits (EGHS, EGLS, EGR).
 
+## After fixes (same 10 permits, 2026-10-12)
+
+| | Baseline | After fixes |
+|---|---|---|
+| Rows found (recall) | 75% | **98%** |
+| Rows that are real (precision) | 87% | **98%** |
+| Rows fully correct, of those found | 59% | **94%** |
+| Scanned permits: rows found | 8% | **92%** |
+| Generator units, extracted / true | 648 / 672 | **672 / 672** |
+| Generator MW, extracted / true | 1,660 / 1,709 | **1,702 / 1,709** |
+
+Fixes: model read after the rating or after "Model"; IDs without digits (EGHS, EGR);
+class from generator-style IDs; on OCR'd pages, the ID column rebuilt from the first
+token of each printed line ("EG-16 / thru / EG-20"), numeric IDs ("1-5",
+"1, 2, 3, and 4"), rows that open with their count, and section headings closing rows.
+Scan rules apply only to OCR'd pages, so digital-page behaviour cannot regress through them.
+
+What is left is OCR, not parsing: an unreadable rating ("aaeee"), unreadable IDs
+("gand1o" for "9 and 10"), a rating printed on the line above its row. The one row with
+an unreadable rating is held for review, as it should be.
+
+**These numbers are optimistic.** The fixes were made while looking at these 10
+permits, so this is now a development score. The honest number comes from permits nobody
+has looked at.
+
 ## Next
 
-These 10 permits are now a development set. After fixing against them, accuracy must
-be re-measured on permits nobody has looked at (a fresh labelled test set).
+1. Spot-check gold labels for 2-3 permits by hand (labels are Claude's first pass).
+2. Label 5-10 permits nobody has looked at (ideally recent Loudoun/Prince William/Fairfax)
+   and report that as the test score.
