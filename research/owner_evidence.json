@@ -1,0 +1,161 @@
+{
+  "_about": "Hand-researched links from permittee LLCs to the companies behind them. Each link needs evidence that ties back to the permit (its mailing address, site name or location). 'permit' evidence is filled in from the site's own permit text by the loader. Claims are paraphrased; no source text is copied. Aggregator directories (baxtel, datacentermap, datacenterhawk, cleanview) are used only as corroboration. Researched 2026-10-12.",
+  "links": [
+    {
+      "site_id": "VA-74321",
+      "role": "developer",
+      "company": "SDC Capital Partners",
+      "link_type": "direct",
+      "evidence": [
+        {
+          "kind": "permit",
+          "page": 1,
+          "claim": "cover letter mailing address: 817 Broadway, 10th Floor, New York, NY 10003"
+        },
+        {
+          "kind": "press",
+          "url": "https://commercialobserver.com/2019/05/sdc-capital-grabs-10k-sf-lease-at-817-broadway/",
+          "claim": "SDC Capital Partners leased the whole 10th floor of 817 Broadway"
+        },
+        {
+          "kind": "press",
+          "url": "https://datacenterdynamics.com/en/news/belmont-innovation-campus-gets-board-approval-from-loudoun-county-paves-way-for-13-million-sq-ft-data-center",
+          "claim": "Belmont Innovation Campus applicant is SDC Capital Partners via Loudoun GC LLC"
+        }
+      ]
+    },
+    {
+      "site_id": "VA-74241",
+      "role": "developer",
+      "company": "Corscale",
+      "link_type": "direct",
+      "evidence": [
+        {
+          "kind": "permit",
+          "page": 5,
+          "claim": "permit header names the site 'Gainesville Crossing Data Campus'"
+        },
+        {
+          "kind": "press",
+          "url": "https://datacenterdynamics.com/en/news/new-hyperscale-developer-corscale-is-behind-300mw-gainesville-crossing-campus-in-prince-william-county",
+          "claim": "Corscale (Patrinely Group with USAA Real Estate) is developing the Gainesville Crossing campus"
+        }
+      ]
+    },
+    {
+      "site_id": "VA-74241",
+      "role": "owner",
+      "company": "Affinius Capital (formerly USAA Real Estate)",
+      "link_type": "inferred",
+      "evidence": [
+        {
+          "kind": "permit",
+          "page": 1,
+          "claim": "permittee GCDC Purchaser Phase 1 LLC, mailing address 9830 Colonnade Boulevard, Suite 600, San Antonio, TX"
+        },
+        {
+          "kind": "press",
+          "url": "https://therealdeal.com/texas/2023/05/22/affinius-sells-hq-building-to-sageview",
+          "claim": "9830 Colonnade Boulevard is the headquarters of Affinius Capital, formerly USAA Real Estate"
+        }
+      ]
+    },
+    {
+      "site_id": "VA-53197",
+      "role": "developer",
+      "company": "Connect Data Centers (Oppidan Investment Company)",
+      "link_type": "inferred",
+      "evidence": [
+        {
+          "kind": "permit",
+          "page": 1,
+          "claim": "permittee CLOP Ashland VA LLC, mailing address 400 Water St., Suite 200, Excelsior, MN 55331"
+        },
+        {
+          "kind": "directory",
+          "url": "https://datacenterhawk.com/marketplace/providers/connect-data-centers",
+          "claim": "Connect Data Centers, Oppidan's data center division, lists 400 Water Street, Suite 200, Excelsior, MN"
+        },
+        {
+          "kind": "directory",
+          "url": "https://baxtel.com/data-center/connect-data-centers-ashland-va",
+          "claim": "lists CLOP Ashland VA LLC under Connect Data Centers: Ashland"
+        }
+      ]
+    },
+    {
+      "site_id": "VA-51232",
+      "role": "operator",
+      "company": "QTS Data Centers",
+      "link_type": "inferred",
+      "evidence": [
+        {
+          "kind": "permit",
+          "page": 1,
+          "claim": "permittee Quality Investment Properties Richmond, LLC, mailing address 6000 Technology Blvd, Sandston, VA 23150"
+        },
+        {
+          "kind": "directory",
+          "url": "https://www.datacentermap.com/usa/virginia/richmond/qts-richmond-1-dc1/",
+          "claim": "QTS Richmond 1 DC1-DC3 are at 6000 Technology Blvd, Sandston"
+        },
+        {
+          "kind": "directory",
+          "url": "https://baxtel.com/campus/qts-richmond-i-campus",
+          "claim": "QTS Richmond I campus at 6000 Technology Boulevard, Henrico"
+        },
+        {
+          "kind": "directory",
+          "url": "https://www.ocolo.io/colocation/qts-data-centers/richmond-dc1-dc2-dc3",
+          "claim": "QTS Richmond DC1/DC2/DC3 site"
+        },
+        {
+          "kind": "reference",
+          "url": "https://en.wikipedia.org/wiki/Quality_Technology_Services",
+          "claim": "'Quality' in QTS comes from its founding family office, Quality Group of Companies"
+        }
+      ]
+    },
+    {
+      "site_id": "VA-74332",
+      "role": "developer",
+      "company": "Menlo Digital (Menlo Equities)",
+      "link_type": "inferred",
+      "evidence": [
+        {
+          "kind": "permit",
+          "page": 1,
+          "claim": "permittee Herndon Technology Partners LLC at 13775 McLearen Road, Herndon; letter names the site 'MD-VA1 data center'"
+        },
+        {
+          "kind": "press",
+          "url": "https://baxtel.com/news/menlo-equities-breaks-ground-on-48mw-data-center-in-fairfax-county-virginia",
+          "claim": "Menlo Digital broke ground on its MD-DC1 data center at 13775 McLearen Road, Herndon"
+        }
+      ]
+    },
+    {
+      "site_id": "VA-52629",
+      "role": "operator",
+      "company": "Meta Platforms (named as Facebook in the source)",
+      "link_type": "direct",
+      "evidence": [
+        {
+          "kind": "permit",
+          "page": 1,
+          "claim": "permittee Scout Development LLC (Menlo Park, CA), facility in White Oak Technology Park, Sandston"
+        },
+        {
+          "kind": "local_government",
+          "url": "https://henricocitizen.com/henrico-supervisors-authorize-planned-improvements-to-facebook-site",
+          "claim": "Henrico supervisors approved an agreement with Scout Development LLC, developer of Facebook's White Oak data center"
+        },
+        {
+          "kind": "press",
+          "url": "https://richmondbizsense.com/2017/10/06/henrico-fended-off-competition-bid-facebook-data-center/",
+          "claim": "Facebook's White Oak Technology Park data center"
+        }
+      ]
+    }
+  ]
+}

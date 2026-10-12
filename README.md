@@ -77,3 +77,23 @@ permitpipe tx-pull
 python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 .venv/bin/pytest
 ```
+
+## Who is behind each site (`permitpipe owners`)
+
+Permits are issued to the applicant, often a single-purpose LLC. `owners.py` links each
+site to the company behind it, the way Meteor Labs' methodology describes:
+
+- **direct**: a document about the site names the company (the DEQ cover letter is
+  addressed to "Digital Realty"; Henrico County's resolution names Scout Development LLC
+  as the developer of Facebook's White Oak data center).
+- **inferred**: indirect evidence, e.g. the permit's mailing address is the company's
+  office (Belmont's 817 Broadway, 10th Floor = SDC Capital Partners).
+
+Hand research lives in `research/owner_evidence.json`, versioned, with a URL and a
+paraphrased claim per item. The loader refuses any link without evidence from the permit
+itself, any link resting on a single directory listing, and any "direct" link without a
+press, government, registry or company document. Names of individuals are used only to
+read documents; they are redacted before anything is stored.
+
+Virginia's business registry (cis.scc.virginia.gov) disallows automated access in
+robots.txt, so it is not scraped; registry lookups are a manual step.

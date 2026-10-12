@@ -5,6 +5,7 @@
   permitpipe ocr [--force]                 page text for every stored permit PDF
   permitpipe extract                       equipment rows -> versioned unit records
   permitpipe eval                          score extraction against eval/gold.csv
+  permitpipe owners                        resolve permittee LLCs to companies, with evidence
   permitpipe tx-pull                       fetch the TCEQ pending NSR table
   permitpipe status                        counts by source
 """
@@ -194,6 +195,31 @@ def cmd_eval(args) -> None:
             print(f"  {p['listing_key']} [{tag}] SPURIOUS row p{x.page}: {x.raw.splitlines()[0][:60]!r}")
 
 
+def cmd_owners(args) -> None:
+    import json
+
+    from .owners import resolve
+
+    con = store.connect()
+    out = resolve(con)
+    for r in con.execute(
+            """SELECT o.site_id, o.company, o.link_type, o.rule, o.evidence,
+                      (SELECT site_name FROM listings l WHERE 'VA-' || substr(l.listing_key, 1,
+                        instr(l.listing_key, '-') - 1) = o.site_id LIMIT 1) AS site_name
+               FROM owner_links o ORDER BY o.link_type, o.company, o.site_id"""):
+        ev = json.loads(r["evidence"])[0]
+        print(f"{r['site_id']:9} {r['site_name'][:34]:34} -> {r['company']:22} {r['link_type']:8} "
+              f"{r['rule']:16} \"{ev['quote'][:60]}\"")
+    print(f"\n{out['resolved']}/{out['sites']} sites linked; unresolved:")
+    for site in out["unresolved"]:
+        ents = con.execute(
+            "SELECT DISTINCT entity, role_hint, address FROM site_entities WHERE site_id = ? "
+            "AND role_hint != 'listing'", (site,)).fetchall()
+        names = "; ".join(sorted({e["entity"] for e in ents}))
+        addr = next((e["address"] for e in ents if e["address"]), "")
+        print(f"  {site:9} {names[:70]:70} | {addr}")
+
+
 def cmd_status(args) -> None:
     con = store.connect()
     for row in con.execute(
@@ -212,6 +238,7 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("extract").set_defaults(fn=cmd_extract)
     s = sub.add_parser("eval"); s.add_argument("--set", default="dev", help="dev | test")
     s.set_defaults(fn=cmd_eval)
+    sub.add_parser("owners").set_defaults(fn=cmd_owners)
     sub.add_parser("tx-pull").set_defaults(fn=cmd_tx_pull)
     sub.add_parser("status").set_defaults(fn=cmd_status)
     args = p.parse_args(argv)
