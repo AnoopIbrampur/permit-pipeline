@@ -6,7 +6,8 @@
   from the 29 downloaded. `tuned: true` marks the 4 permits inspected while building
   the extractor; their scores are optimistic.
 - `gold.csv`: one row per equipment-table row, typed from rendered page images
-  (`pages/`), not from the OCR text the extractor reads. First pass labelled by Claude;
+  (`pages/`, not committed: some pages show individuals' names; re-render them from the
+  permit PDFs with PyMuPDF at 100 dpi), not from the OCR text the extractor reads. First pass labelled by Claude;
   needs a human spot-check before the numbers are quoted.
 - `baseline-2026-10-12.txt`: first full run.
 - `after-fixes-2026-10-12.txt`: after fixing the failure modes the baseline found.
