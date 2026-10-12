@@ -1,0 +1,145 @@
+import pytest
+
+from permitpipe import store
+from permitpipe.extract import expand_refs, extract, load_units, normalize, words_to_int
+
+# Shapes copied from real DEQ permits (born-digital layout, one cell per line).
+MODERN = """Equipment List - Equipment at this facility covered by this permit document consists of:
+Equipment included in the project:
+Reference No.
+Equipment Description
+Rated Capacity
+ENG140-ENG145
+Six (6) Caterpillar Model C175-16 backup
+engine-generator sets
+4,376 bhp
+3,100 kWe, each
+--
+Other Permitted Equipment:
+Reference No.
+Equipment Description
+ENG1-ENG20,
+ENG22-ENG41
+Forty (40) Caterpillar Model
+C175-16 backup engine-generator sets
+4,376 bhp
+3,100 kWe, each
+ENG21
+One (1) Caterpillar Model C15 backup engine-
+generator set
+762 bhp
+500 kWe
+Specifications included in the above tables are for informational purposes only.
+"""
+
+PAGE_BREAK = """Equipment List - Equipment at this facility consists of:
+Other Permitted Equipment:
+EG80-EG112
+Thirty-three (33) MTU 16V4000
+DS2250 diesel emergency generators
+3,350 BHP, each
+2,250 kW, each
+"""
+PAGE_BREAK_2 = """Quality Investment Properties Richmond, LLC
+Registration Number: 51232
+June 24, 2024
+Page 4
+Reference No.
+Equipment Description
+EG113-EG115
+Three (3) Caterpillar model CAT
+3516C diesel emergency generators
+3,634 BHP, each
+2,500 kW, each
+CT01-CT04
+Four (4) SPX Marley, 2-cell water
+cooling towers
+1. Emission Controls - Nitrogen oxides
+"""
+
+# Tesseract on an old scan: whole row on one line, bare row numbers as refs.
+OLD_SCAN = """Equipment List - Equipment at this facility consists of the following:
+No. |. Equipment Descnption Rated: Capacity - Requirements| Permit-Date :
+Equipment to be added as part of this facility modification:
+3 One Caterpillar 1500 KW diesel-powered 2500 brake NSPS 5/16/2008
+emergency generator horsepower Subpart IIIl
+Previously permitted equipment:
+2 One Caterpillar 1500 KW diesel-powered 2500 brake NSPS 1413/2008
+emergency generator horsepower Subpart Ill!
+OPERATING/EMISSION LIMITATIONS
+"""
+
+
+@pytest.mark.parametrize("s,n", [
+    ("Six", 6), ("Thirty-three", 33), ("One hundred thirty two", 132),
+    ("Two hundred and ninety-five", 295), ("Ninety-nine", 99), ("banana", None),
+])
+def test_words_to_int(s, n):
+    assert words_to_int(s) == n
+
+
+def test_expand_refs_ranges_lists_and_padding():
+    assert expand_refs("ENG1-ENG3, ENG5") == ["ENG1", "ENG2", "ENG3", "ENG5"]
+    assert expand_refs("EG04-EG06") == ["EG04", "EG05", "EG06"]
+    assert len(expand_refs("EG246-EG280, EG282-EG316")) == 70
+
+
+def test_normalize_ocr_letter_o_in_ids():
+    assert "EG01" in normalize("EGO1 - EGO6")
+    assert "EG06" in normalize("EGO1 - EGO6")
+
+
+def test_modern_table():
+    rows = extract([(5, MODERN)])
+    assert [r.count for r in rows] == [6, 40, 1]
+    new, big, small = rows
+    assert new.section == "new" and big.section == "existing"
+    assert new.manufacturer == "Caterpillar" and new.model == "C175-16"
+    assert new.unit_kw == 3100 and new.reported_unit == "kWe" and new.bhp == 4376
+    assert new.duty == "emergency" and new.equipment_class == "genset"
+    assert big.ref_ids[:2] == ["ENG1", "ENG2"] and len(big.ref_ids) == 40
+    assert small.model == "C15" and small.unit_kw == 500
+    assert not any(r.held for r in rows)
+
+
+def test_table_across_pages_skips_running_header():
+    rows = extract([(5, PAGE_BREAK), (6, PAGE_BREAK_2)])
+    assert [(r.page, r.count, r.equipment_class) for r in rows] == [
+        (5, 33, "genset"), (6, 3, "genset"), (6, 4, "cooling_tower")]
+    assert rows[0].model == "16V4000 DS2250"     # 'DS2250' line did not start a new row
+    assert rows[1].model == "3516C"
+
+
+def test_count_mismatch_and_overlap_are_held():
+    text = MODERN.replace("Forty (40)", "Thirty-nine (40)").replace("ENG1-ENG20,", "ENG1-ENG21,")
+    rows = extract([(1, text)])
+    big = rows[1]
+    assert big.checks["count_words_match_digits"] is False
+    assert big.checks["ref_ids_match_count"] is False
+    assert big.checks["ref_ids_unique"] is False and rows[2].checks["ref_ids_unique"] is False
+    assert big.held and not rows[0].held
+
+
+def test_old_scan_rows():
+    rows = extract([(4, OLD_SCAN)])
+    assert [(r.ref_ids, r.section, r.count) for r in rows] == [(["3"], "new", 1), (["2"], "existing", 1)]
+    assert rows[0].unit_kw == 1500 and rows[0].bhp == 2500 and rows[0].manufacturer == "Caterpillar"
+
+
+def test_load_units_versions(tmp_path):
+    con = store.connect(tmp_path / "t.db")
+    sha, _ = store.put_document(con, b"permit", source="va_deq", url="u", raw_dir=tmp_path)
+    kw = dict(site_id="VA-52903", source_sha=sha, first_seen_at="2026-10-12T05:00:00+00:00",
+              published_at="2026-09-29")
+    rows = extract([(5, MODERN)])
+    assert load_units(con, rows, recorded_at="2026-10-12T06:00:00+00:00", **kw)["new"] == 3
+    # re-running on the same text writes nothing
+    assert load_units(con, rows, recorded_at="2026-10-12T07:00:00+00:00", **kw)["unchanged"] == 3
+    # extractor fix on the same document -> 'correction' version
+    rows[0].model = "C175-16 (fixed)"
+    rows[0].manufacturer = "MTU"
+    stats = load_units(con, rows, recorded_at="2026-10-12T08:00:00+00:00", **kw)
+    assert stats["changed"] == 1
+    v = con.execute("SELECT version, revision_reason FROM unit_versions "
+                    "WHERE record_id = 'VA-52903:ENG140-ENG145' ORDER BY version").fetchall()
+    assert [tuple(x) for x in v] == [(1, "new_document"), (2, "correction")]

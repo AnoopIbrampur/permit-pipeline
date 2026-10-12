@@ -2,6 +2,8 @@
 
   permitpipe va-index <saved_index.html>   import a browser-saved VA DEQ index page
   permitpipe va-pdfs <dir> [--pattern]     import browser-saved VA permit PDFs
+  permitpipe ocr [--force]                 page text for every stored permit PDF
+  permitpipe extract                       equipment rows -> versioned unit records
   permitpipe tx-pull                       fetch the TCEQ pending NSR table
   permitpipe status                        counts by source
 """
@@ -78,6 +80,51 @@ def cmd_tx_pull(args) -> None:
         print(f"  {r['applicant']} | {r['facility']} | {', '.join(r['permit_numbers'])}")
 
 
+def cmd_ocr(args) -> None:
+    from .ocr import page_texts
+
+    con = store.connect()
+    docs = con.execute(
+        "SELECT sha256, path FROM documents WHERE content_type = 'application/pdf'").fetchall()
+    for n, d in enumerate(docs, 1):
+        pages = page_texts(Path(d["path"]), d["sha256"], force=args.force)
+        ocr = [p for p in pages if p["method"] == "ocr"]
+        confs = [p["mean_conf"] for p in ocr if p["mean_conf"] is not None]
+        low = f", min conf {min(confs):.0f}" if confs else ""
+        print(f"[{n}/{len(docs)}] {d['sha256'][:12]}: {len(pages)} pages, {len(ocr)} OCR{low}",
+              flush=True)
+
+
+def cmd_extract(args) -> None:
+    from .extract import extract, load_units
+    from .ocr import OCR_DIR
+
+    con = store.connect()
+    now = store.utcnow()
+    docs = con.execute(
+        """SELECT d.sha256, d.retrieved_at, l.listing_key, l.site_name, l.issued_on
+           FROM documents d JOIN listings l ON l.doc_url = d.url AND l.source = 'va_deq'
+           WHERE d.content_type = 'application/pdf'
+           GROUP BY d.sha256 ORDER BY l.issued_on""").fetchall()
+    for d in docs:
+        ocr_dir = OCR_DIR / d["sha256"]
+        if not (ocr_dir / "meta.json").exists():
+            print(f"  skip {d['listing_key']}: no page text yet (run permitpipe ocr)")
+            continue
+        pages = [(int(p.stem[5:8]), p.read_text())
+                 for p in sorted(ocr_dir.glob("page-[0-9][0-9][0-9].txt"))]
+        rows = extract(pages)
+        site_id = "VA-" + d["listing_key"].split("-")[0]
+        stats = load_units(con, rows, site_id=site_id, source_sha=d["sha256"],
+                           first_seen_at=d["retrieved_at"], published_at=d["issued_on"],
+                           recorded_at=now)
+        gens = [r for r in rows if r.equipment_class == "genset"]
+        held = sum(r.held for r in rows)
+        print(f"{d['listing_key']:9} {d['site_name'][:38]:38} rows={len(rows):3} held={held:2} "
+              f"gensets={sum(r.count or 0 for r in gens):4} new={stats['new']} "
+              f"changed={stats['changed']}")
+
+
 def cmd_status(args) -> None:
     con = store.connect()
     for row in con.execute(
@@ -91,6 +138,9 @@ def main(argv: list[str] | None = None) -> None:
     s = sub.add_parser("va-index"); s.add_argument("html"); s.set_defaults(fn=cmd_va_index)
     s = sub.add_parser("va-pdfs"); s.add_argument("inbox")
     s.add_argument("--pattern", default="*_DC_Permit.pdf"); s.set_defaults(fn=cmd_va_pdfs)
+    s = sub.add_parser("ocr"); s.add_argument("--force", action="store_true")
+    s.set_defaults(fn=cmd_ocr)
+    sub.add_parser("extract").set_defaults(fn=cmd_extract)
     sub.add_parser("tx-pull").set_defaults(fn=cmd_tx_pull)
     sub.add_parser("status").set_defaults(fn=cmd_status)
     args = p.parse_args(argv)

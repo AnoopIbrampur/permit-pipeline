@@ -55,6 +55,8 @@ CREATE TABLE IF NOT EXISTS unit_versions (
     site_id         TEXT NOT NULL,
     source_sha      TEXT NOT NULL REFERENCES documents(sha256),
     page            INTEGER,
+    section         TEXT,                 -- 'new' (this permit action) | 'existing'
+    ref_ids         TEXT,                 -- JSON list of the permit's unit reference IDs
     equipment_class TEXT,                 -- diesel_genset | gas_turbine | recip_engine | fuel_cell
     unit_count      INTEGER,
     reported_value  REAL,
@@ -66,6 +68,11 @@ CREATE TABLE IF NOT EXISTS unit_versions (
     fuel            TEXT,
     emissions_tier  TEXT,
     hours_limit     REAL,
+    duty            TEXT,                 -- emergency | non_emergency
+    raw_text        TEXT NOT NULL,        -- the table row as read
+    checks          TEXT NOT NULL,        -- JSON {check: bool}
+    flags           TEXT NOT NULL,        -- JSON list
+    review_status   TEXT NOT NULL,        -- 'ok' | 'held' (a check failed; needs review)
     published_at    TEXT,
     first_seen_at   TEXT NOT NULL,
     recorded_at     TEXT NOT NULL,
@@ -85,6 +92,9 @@ def connect(db_path: Path | None = None) -> sqlite3.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(db_path)
     con.row_factory = sqlite3.Row
+    cols = {r[1] for r in con.execute("PRAGMA table_info(unit_versions)")}
+    if cols and "review_status" not in cols:   # pre-extraction schema, never populated
+        con.execute("DROP TABLE unit_versions")
     con.executescript(SCHEMA)
     return con
 
