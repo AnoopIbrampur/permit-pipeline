@@ -1,0 +1,23 @@
+[project]
+name = "permitpipe"
+version = "0.1.0"
+description = "Source-linked, point-in-time records of data center generator permits"
+requires-python = ">=3.11"
+dependencies = ["requests>=2.31", "beautifulsoup4>=4.12"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+permitpipe = "permitpipe.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
