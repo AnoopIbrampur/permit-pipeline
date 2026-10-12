@@ -241,3 +241,69 @@ def test_scan_ocr_noise_in_ids_and_maker_starts_row():
 def test_scan_rules_do_not_apply_to_digital_pages():
     # same text without the OCR flag: numeric 'Five (5)' line must not split digital rows
     assert [r.count for r in extract([(5, MODERN)], ocr_pages=frozenset({5}))] == [6, 40, 1]
+
+
+from permitpipe.extract import condition_ids, cross_check, parse_id_list  # noqa: E402
+
+
+@pytest.mark.parametrize("text,n,first,last", [
+    ("EG1-20 EG22-EG41 EG43-EG62", 60, "EG1", "EG62"),
+    ("1, 2, 12, 17, 18, 19, and 36", 7, "1", "36"),
+    ("3 through 11 and 13 through 16", 13, "3", "16"),
+    ("GEN-97 through GEN-144", 48, "GEN-97", "GEN-144"),
+    ("EG5-H1, EG5-H2, EG6-H1, and EG6-H2", 4, "EG5-H1", "EG6-H2"),
+    ("EG1-2 through EG1-4", 3, "EG1-2", "EG1-4"),
+    ("1 through 68, T1, and T2", 70, "1", "T2"),
+    ("D1-D7, D18- D24", 14, "D1", "D24"),
+    ("EG1-EG3 and EGR", 4, "EG1", "EGR"),
+    ("00GEN-1", 1, "00GEN-1", "00GEN-1"),
+])
+def test_parse_id_list(text, n, first, last):
+    ids = parse_id_list(text)
+    assert (len(ids), ids[0], ids[-1]) == (n, first, last)
+
+
+def test_table_rows_delimited_by_markers():
+    # rebuilt from table detection: a model alone on a line must not start a row
+    text = """Equipment List - Equipment at this facility covered by this permit document consists of:
+Equipment to be Constructed:
+<<row>>
+EG5-H1,
+EG5-H2,
+EG6-H1,
+and
+EG6-H2
+(4) Either Cummins
+QSK38-G18
+(C1500D6E) or
+Caterpillar 3512C
+emergency diesel-fired
+engine gen-sets
+1,500 ekW
+2,011 bhp
+"""
+    (row,) = extract([(5, text)])
+    assert row.count == 4 and len(row.ref_ids) == 4
+    assert row.manufacturer == "Cummins" and row.model.startswith("QSK38-G18") and row.unit_kw == 1500
+
+
+CONDITIONS = """
+1. Emission Controls - emissions from the engine gen-sets (Ref. Nos. 1 through 4 and EG-13 through EG-28) shall be
+2. Monitoring - Each engine (Ref. Nos. 1 through 4 and EG-13 through EG-28) shall be equipped
+3. Fuel - the engines (Ref. Nos. 1 through 4 and EG-713 through EG-28) is diesel
+4. Limits - engines (Ref. Nos. EG-13 through EG-28) shall not exceed
+"""
+
+
+def test_condition_ids_ignore_one_off_misreads():
+    ids = set(condition_ids([(9, CONDITIONS)]))
+    assert ids == {"1", "2", "3", "4"} | {f"EG{i}" for i in range(13, 29)}   # 'EG-713' dropped
+
+
+def test_cross_check_flags_missing_rows():
+    table = extract([(5, MODERN)])           # ENG1-ENG41, ENG140-ENG145 (no ENG42)
+    conditions = "\n".join(f"{c} (Ref. Nos. ENG1-ENG42) shall" for c in ("Controls", "Hours", "Fuel"))
+    pages = [(5, MODERN), (9, conditions)]
+    x = cross_check(table, pages)
+    assert x["status"] == "incomplete" and x["missing"] == ["ENG42"]
+    assert cross_check(table, [(5, MODERN)])["status"] == "no_reference"

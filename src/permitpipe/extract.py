@@ -92,7 +92,9 @@ LEAD_DIGIT_COUNT_RE = re.compile(r"^\W*(\d{1,4})\s+(?=[A-Z][a-z])")
 LEAD_WORD_COUNT_RE = re.compile(rf"^\W*((?:(?:{_NUMWORDS_RE})[\s-]*)+)\b", re.I)
 
 # EG01, ENG140, B-05, 00GEN-1, A/B10, HGEN
-REF = r"(?:\d{1,3})?[A-Z]{1,6}(?:/[A-Z])?-?\d{1,4}[A-Z]?(?:-\d{1,3})?|[A-Z]{0,4}GEN|(?:EG|DG)[A-Z]{1,2}"
+REF = (r"[A-Z]{1,6}-[A-Z]{0,4}\d{1,3}[A-Z]?-(?:\d{1,3}|[A-Z])\b"   # EG-DD1A-01, EG-3-01, EG-3-H
+       r"|[A-Z]{1,6}\d{1,4}-[A-Z]\d{1,3}"       # EG5-H1
+       r"|(?:\d{1,3})?[A-Z]{1,6}(?:/[A-Z])?-?\d{1,4}[A-Z]?(?:-\d{1,3})?|[A-Z]{0,4}GEN|(?:EG|DG)[A-Z]{1,2}")
 REF_RANGE_RE = re.compile(rf"\b({REF})\s*(?:-|to|thru|through)\s*({REF})\b")
 _REF_NUM_RE = re.compile(r"^(.*?)(\d+)$")
 REF_RE = re.compile(rf"\b({REF})\b")
@@ -139,6 +141,7 @@ def normalize(text: str) -> str:
     # OCR: letter O inside a reference ID ("EGO1" -> "EG01")
     text = re.sub(r"\b([A-Z]{1,5})O(\d)", r"\g<1>0\2", text)
     text = re.sub(r"\b([A-Z]{1,5}\d)O\b", r"\g<1>0", text)
+    text = re.sub(r"\b([A-Z]{1,6}\d{1,4})-\s+([A-Z]\d{1,3})\b", r"\1-\2", text)   # "EG6- H1"
     # "ENG 155" -> "ENG155" (only unit-ID prefixes; "MTU 16V4000" must stay apart)
     text = re.sub(r"\b(ENG|EG|DG|GEN|GE|FP|CT)\s+(\d{1,4})\b", r"\1\2", text)
     return text
@@ -212,6 +215,9 @@ def equipment_region(pages: list[tuple[int, str]]) -> list[tuple[int, str]]:
         if skip_running_header:      # first line on a new page is the permittee name
             skip_running_header = False
             continue
+        if line.strip() == "<<row>>":
+            out.append((page, "<<row>>"))
+            continue
         if not line.strip() or HEADER_LINE_RE.match(line) or _is_header_line(line):
             continue
         out.append((page, line.rstrip()))
@@ -230,13 +236,90 @@ def _starts_row(line: str) -> bool:
     Rules out wrapped description lines that happen to begin with a model
     number shaped like an ID ('DS2250 diesel emergency generators').
     """
-    if OLD_ROW_START_RE.match(line):
+    if OLD_ROW_START_RE.match(line) or NUM_ID_LINE_RE.fullmatch(line):
         return True
     m = ROW_START_RE.match(line)
     if not m:
         return False
     rest = line[m.end():].lstrip(" |")
     return not rest or bool(_DESC_START_RE.match(rest))
+
+
+# ---- ID lists: "1 through 22", "1, 2, 12, 17, 18, 19, and 36", "EG1-20", "GEN-97 through
+#      GEN-144", "T1 and T2", "EG5-H1, EG5-H2, and EG6-H2"
+
+_ID_TOK = rf"(?:{REF}|\d{{1,3}})"
+_ID_SEP = r"(?:\s*(?:-|,|;|and|&|thru|through|to))+\s*"
+ID_LIST_RE = re.compile(rf"{_ID_TOK}(?:{_ID_SEP}{_ID_TOK})*")
+# a line that is only (part of) an ID cell; may open or close with a connector
+ID_LINE_RE = re.compile(rf"\s*(?:(?:and|&|thru|through|to|,|-)\s*)?{_ID_TOK}(?:{_ID_SEP}{_ID_TOK})*"
+                        rf"(?:\s*(?:-|,|and|&|thru|through|to))*\s*|\s*(?:through|thru|and|to)\s*")
+NUM_ID_LINE_RE = re.compile(rf"\s*\d{{1,3}}(?:{_ID_SEP}{_ID_TOK})*(?:\s*(?:-|,|and|&|thru|through|to))*\s*")
+
+
+def _expand_range(a: str, b: str) -> list[str] | None:
+    ma, mb = re.fullmatch(r"(.*?)(\d+)", a), re.fullmatch(r"(.*?)(\d+)", b)
+    if not (ma and mb):
+        return None
+    pa, na = ma.groups()
+    pb, nb = mb.groups()
+    if pb == "" and pa and not pa[-1].isdigit():
+        pb = pa                                   # shorthand "EG1-20"
+    if pa != pb or not int(na) <= int(nb) or int(nb) - int(na) > 2000:
+        return None
+    width = len(na) if na.startswith("0") and len(na) > 1 else 0
+    return [f"{pa}{str(i).zfill(width)}" for i in range(int(na), int(nb) + 1)]
+
+
+_ID_TOKEN_RE = re.compile(rf"({REF}|\d{{1,3}})|\b(through|thru|to|and)\b|(-|,|;|&)", re.I)
+
+
+def parse_id_list(text: str) -> list[str]:
+    """Walk IDs and connectors left to right; 'A <-|through|thru|to> B' is a range."""
+    toks: list[tuple[str, str]] = []           # ('id', 'EG1') | ('rng', '-') | ('sep', ',')
+    for m in _ID_TOKEN_RE.finditer(normalize(text)):
+        if m.group(1):
+            toks.append(("id", m.group(1)))
+        elif (m.group(2) or "").lower() == "and" or m.group(3) in (",", ";", "&"):
+            toks.append(("sep", ","))
+        else:
+            toks.append(("rng", "-"))
+    ids: list[str] = []
+    i = 0
+    while i < len(toks):
+        kind, val = toks[i]
+        if kind != "id":
+            i += 1
+            continue
+        if i + 2 < len(toks) and toks[i + 1][0] == "rng" and toks[i + 2][0] == "id":
+            b = toks[i + 2][1]
+            ids += _expand_range(val, b) or [val, b]
+            i += 3
+            continue
+        same = re.fullmatch(r"([A-Z]+)(\d+)-\1(\d+)", val)          # "D1-D7" = D1..D7
+        if same and int(same.group(2)) < int(same.group(3)) and not (
+                i + 1 < len(toks) and toks[i + 1][0] == "rng"):
+            ids += [f"{same.group(1)}{n}" for n in range(int(same.group(2)), int(same.group(3)) + 1)]
+            i += 1
+            continue
+        short = re.fullmatch(r"([A-Z]+)(\d+)-(\d+)", val)          # "EG1-20" = EG1..EG20
+        followed_by_range = i + 1 < len(toks) and toks[i + 1][0] == "rng"
+        if short and not followed_by_range and int(short.group(2)) < int(short.group(3)) < 2000:
+            ids += [f"{short.group(1)}{n}" for n in range(int(short.group(2)), int(short.group(3)) + 1)]
+        else:
+            ids.append(val)
+        i += 1
+    seen, out = set(), []
+    for x in ids:
+        if x not in seen:
+            seen.add(x)
+            out.append(x)
+    return out
+
+
+def canon_id(x: str) -> str:
+    x = re.sub(r"[\s-]", "", x.upper())
+    return re.sub(r"(?<!\d)0+(?=\d)", "", x)
 
 
 # ---- scanned pages (Tesseract keeps each printed line, so table cells interleave)
@@ -274,18 +357,7 @@ def scan_id_cell(text: str) -> str:
 
 
 def expand_ids(cell: str) -> list[str]:
-    """expand_refs plus purely numeric IDs: '1-5', '6-8', '1, 2, 3, and 4'."""
-    if re.fullmatch(rf"\s*{_NUM_IDS}\s*", cell, re.I):
-        ids: list[str] = []
-        for piece in re.split(r",|\band\b|&", cell):
-            piece = piece.strip()
-            r = re.fullmatch(r"(\d+)\s*(?:-|thru|through|to)\s*(\d+)", piece)
-            if r and int(r.group(1)) <= int(r.group(2)):
-                ids += [str(i) for i in range(int(r.group(1)), int(r.group(2)) + 1)]
-            elif piece.isdigit():
-                ids.append(piece)
-        return ids
-    return expand_refs(cell)
+    return parse_id_list(cell)
 
 
 def split_rows(lines: list[tuple[int, str]],
@@ -294,17 +366,24 @@ def split_rows(lines: list[tuple[int, str]],
     rows: list[list] = []
     section = None
     close_row = False          # a section heading ends the row above it
+    in_table_row = False       # inside a row delimited by table detection: never split it
     for page, line in lines:
+        if line == "<<row>>":
+            close_row, in_table_row = True, True
+            continue
         heading = len(line) < 90 and (
             "new" if NEW_SECTION_RE.search(line) else
             "existing" if OLD_SECTION_RE.search(line) else
             "exempt" if EXEMPT_SECTION_RE.search(line) else None)
         if heading:
-            section, close_row = heading, True
+            section, close_row, in_table_row = heading, True, False
             continue
         if close_row:
             rows.append([page, line, section])
             close_row = False
+            continue
+        if in_table_row and rows:
+            rows[-1][1] += "\n" + line
             continue
         starts = _starts_row(line) or (page in ocr_pages and (
             bool(SCAN_ROW_START_RE.match(line))
@@ -351,6 +430,12 @@ def expand_refs(text: str) -> list[str]:
     return ids
 
 
+def _first_maker(text: str) -> str | None:
+    """The maker named first ('Either Cummins ... or Caterpillar' -> Cummins)."""
+    hits = [(m.start(), name) for name, pat in OEMS.items() if (m := re.search(pat, text, re.I))]
+    return min(hits)[1] if hits else None
+
+
 def _first(patterns: dict[str, str] | list, text: str):
     items = patterns.items() if isinstance(patterns, dict) else patterns
     for name, pat in items:
@@ -370,6 +455,8 @@ def _model_tokens(text: str, after_model_word: bool = False) -> str | None:
     toks = []
     for tok in text.split():
         tok = tok.strip(",;:")
+        if re.fullmatch(r"\d+-\d+", tok):
+            break
         is_number = re.fullmatch(r"\d[\d,]*(?:\.\d+)?", tok)
         if (_MODEL_TOK_RE.fullmatch(tok) or (not toks and re.fullmatch(r"[A-Z]", tok))) \
                 and tok.lower() not in _MODEL_STOP \
@@ -419,8 +506,23 @@ def parse_row(page: int, text: str, section: str | None, scanned: bool = False,
     ref_part = flat[: lead.end()] if lead else ""
     desc = flat[lead.end():] if lead else flat
     scan_cell = scan_id_cell(text) if scanned else ""
+    id_lines: list[str] = []
+    if not scanned:
+        lines = text.splitlines()
+        for i, line in enumerate(lines):
+            if location_col and i and not re.search(r"(?:[,\-]|\band|\bthrough|\bthru)\s*$", lines[i - 1]):
+                break
+            if ID_LINE_RE.fullmatch(normalize(line)):
+                id_lines.append(line)
+            else:
+                break
+    ids_from_cell = bool(id_lines)
     if scan_cell:
         ref_ids = expand_ids(scan_cell)
+        ids_from_cell = True
+    elif id_lines:
+        ref_ids = parse_id_list(" ".join(id_lines))
+        desc = re.sub(r"\s+", " ", "\n".join(text.splitlines()[len(id_lines):])).strip()
     elif OLD_ROW_START_RE.match(flat) and not ROW_START_RE.match(flat):
         ref_ids = [lead.group(1)]
     else:
@@ -443,11 +545,11 @@ def parse_row(page: int, text: str, section: str | None, scanned: bool = False,
             cw = words_to_int(ml.group(1))
     count = cd if cd is not None else cw
     count_from_refs = False
-    if count is None and ref_ids and (scanned or not ref_ids[0].isdigit()):
+    if count is None and ref_ids and (ids_from_cell or not ref_ids[0].isdigit()):
         # one row per unit ("00GEN-1  Emergency engine-generator set ...") states no count
         count, count_from_refs = len(ref_ids), True
 
-    oem = _first(OEMS, desc)
+    oem = _first_maker(desc)
     cls = _first(CLASSES, desc)
     if cls is None and oem and ref_ids and all(re.match(r"\d*H?(?:EG|GEN|DG)", x) for x in ref_ids):
         cls = "genset"   # "Eight (8) Caterpillar C32" under HGEN001-HGEN008
@@ -524,6 +626,52 @@ def extract(pages: list[tuple[int, str]], ocr_pages: frozenset[int] = frozenset(
         for x in r.ref_ids:
             seen.setdefault(x, i)
     return rows
+
+
+# ---------------------------------------------------------------- cross-check
+
+# "(Ref. Nos. 1 through 68, T1, and T2)", "(Ref. No. EG-13 through EG-28)",
+# "(Reference Nos. EG01 - EG07)". The equipment table's own header ("Reference No." followed
+# by "Equipment Description") yields no IDs and is ignored.
+REF_MENTION_RE = re.compile(r"\bRef(?:erence)?s?\.?\s*(?:Nos?|Numbers?)\.?(?:\(s\))?\s*:?\s*", re.I)
+
+
+def condition_ids(pages: list[tuple[int, str]]) -> list[str]:
+    """Every unit ID the permit's conditions refer to."""
+    text = normalize("\n".join(t for _, t in pages))
+    text = re.sub(r"\b([A-Z]{1,6})-\s*\n\s*(\d)", r"\1-\2", text)     # "GEN-" / "192"
+    mentions: list[set[str]] = []
+    for m in REF_MENTION_RE.finditer(text):
+        tail = re.sub(r"\s+", " ", text[m.end(): m.end() + 400])
+        lst = ID_LIST_RE.match(tail)
+        if lst and not re.match(r"\s*(?:equipment|description)", tail[lst.end():], re.I):
+            mentions.append({canon_id(x) for x in parse_id_list(lst.group(0))})
+    # a unit ID is real if the conditions mention it at least twice; a one-off is usually a
+    # typo copied from another permit ("EG1-EG105") or an OCR misread ("EG-713")
+    need = 2 if len(mentions) >= 3 else 1
+    counts: dict[str, int] = {}
+    for ids in mentions:
+        for x in ids:
+            counts[x] = counts.get(x, 0) + 1
+    return [x for x, n in counts.items() if n >= need]
+
+
+def cross_check(rows: list[UnitRow], pages: list[tuple[int, str]]) -> dict:
+    """Compare unit IDs in the table with unit IDs the conditions mention.
+
+    IDs the conditions name but the table lacks mean table rows were missed, so site
+    totals are understated: status 'incomplete'. IDs only in the table are normal
+    (exempt or non-combustion equipment the conditions never mention)."""
+    table = {canon_id(x) for r in rows for x in r.ref_ids}
+    cond = {canon_id(x) for x in condition_ids(pages)}
+    missing = sorted(cond - table, key=lambda x: (len(x), x))
+    # combustion rows whose IDs did not parse (or fall short of the count) cannot be checked
+    unchecked = sum(1 for r in rows if r.equipment_class in COMBUSTION and r.section != "exempt"
+                    and r.count and len(r.ref_ids) < r.count)
+    status = ("no_reference" if not cond else "incomplete" if missing
+              else "unchecked_rows" if unchecked else "ok")
+    return {"status": status, "condition_ids": len(cond), "table_ids": len(table),
+            "missing": missing, "unchecked_rows": unchecked}
 
 
 # ---------------------------------------------------------------- persistence

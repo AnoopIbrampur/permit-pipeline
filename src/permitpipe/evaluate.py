@@ -22,7 +22,7 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
-from .extract import extract
+from .extract import cross_check, extract
 from .ocr import OCR_DIR, ocr_page_numbers
 
 EVAL_DIR = Path(__file__).resolve().parents[2] / "eval"
@@ -125,8 +125,17 @@ def evaluate(eval_dir: Path = EVAL_DIR) -> dict:
             "pred_units": sum(p.count or 0 for p in pred_gen),
             "pred_units_ok": sum(p.count or 0 for p in pred_gen if not p.held),
             "pred_mw": sum((p.count or 0) * (p.unit_kw or 0) for p in pred_gen) / 1000,
+            "xcheck": cross_check(preds, pages),
         })
     return {"permits": per_permit}
+
+
+def _missed_units(p: dict) -> int:
+    """Generator units in gold rows the extractor did not find, or found with a wrong ID set."""
+    lost = sum(int(g["count"]) for g in p["missed"] if g["equipment_class"] == "genset")
+    lost += sum(int(r["gold"]["count"]) for r in p["matched"]
+                if r["gold"]["equipment_class"] == "genset" and r["fields"]["ref_ids"] is False)
+    return lost
 
 
 def summarize(permits: list[dict]) -> dict:
@@ -151,5 +160,11 @@ def summarize(permits: list[dict]) -> dict:
         "pred_units": sum(p["pred_units"] for p in permits),
         "pred_units_passed_checks": sum(p["pred_units_ok"] for p in permits),
         "gold_mw": round(sum(p["gold_mw"] for p in permits), 1),
+        # does the conditions cross-check flag the permits whose generator rows were missed?
+        "xcheck_caught": (sum(1 for p in permits if _missed_units(p) and p["xcheck"]["status"] == "incomplete"),
+                          sum(1 for p in permits if _missed_units(p))),
+        "xcheck_false_alarms": (sum(1 for p in permits if not _missed_units(p) and p["xcheck"]["status"] == "incomplete"),
+                                sum(1 for p in permits if not _missed_units(p))),
+        "xcheck_no_reference": sum(1 for p in permits if p["xcheck"]["status"] == "no_reference"),
         "pred_mw": round(sum(p["pred_mw"] for p in permits), 1),
     }

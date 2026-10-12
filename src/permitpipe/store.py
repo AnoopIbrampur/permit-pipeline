@@ -48,6 +48,18 @@ CREATE TABLE IF NOT EXISTS listings (
     PRIMARY KEY (source, snapshot_sha, listing_key, doc_url)
 );
 
+-- Site-level cross-check of the equipment table against the permit's conditions.
+CREATE TABLE IF NOT EXISTS site_checks (
+    site_id        TEXT NOT NULL,
+    source_sha     TEXT NOT NULL REFERENCES documents(sha256),
+    recorded_at    TEXT NOT NULL,
+    status         TEXT NOT NULL,         -- ok | incomplete | no_reference
+    condition_ids  INTEGER NOT NULL,
+    table_ids      INTEGER NOT NULL,
+    missing_ids    TEXT NOT NULL,         -- JSON list
+    PRIMARY KEY (source_sha, recorded_at)
+);
+
 -- Point-in-time unit records (filled by extraction; schema fixed up front).
 CREATE TABLE IF NOT EXISTS unit_versions (
     record_id       TEXT NOT NULL,        -- stable: <site_id>:<unit_tag>

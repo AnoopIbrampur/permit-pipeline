@@ -97,7 +97,9 @@ def cmd_ocr(args) -> None:
 
 
 def cmd_extract(args) -> None:
-    from .extract import extract, load_units
+    import json
+
+    from .extract import cross_check, extract, load_units
     from .ocr import OCR_DIR, ocr_page_numbers
 
     con = store.connect()
@@ -119,11 +121,20 @@ def cmd_extract(args) -> None:
         stats = load_units(con, rows, site_id=site_id, source_sha=d["sha256"],
                            first_seen_at=d["retrieved_at"], published_at=d["issued_on"],
                            recorded_at=now)
-        gens = [r for r in rows if r.equipment_class == "genset"]
+        xc = cross_check(rows, pages)
+        last = con.execute("SELECT status, missing_ids FROM site_checks WHERE source_sha = ? "
+                           "ORDER BY recorded_at DESC LIMIT 1", (d["sha256"],)).fetchone()
+        if not last or (last["status"], last["missing_ids"]) != (xc["status"], json.dumps(xc["missing"])):
+            con.execute("INSERT INTO site_checks VALUES (?,?,?,?,?,?,?)",
+                        (site_id, d["sha256"], now, xc["status"], xc["condition_ids"],
+                         xc["table_ids"], json.dumps(xc["missing"])))
+            con.commit()
+        gens = [r for r in rows if r.equipment_class == "genset" and r.section != "exempt"]
         held = sum(r.held for r in rows)
+        xs = xc["status"] if xc["status"] != "incomplete" else f"MISSING {len(xc['missing'])}"
         print(f"{d['listing_key']:9} {d['site_name'][:38]:38} rows={len(rows):3} held={held:2} "
               f"gensets={sum(r.count or 0 for r in gens):4} new={stats['new']} "
-              f"changed={stats['changed']} retracted={stats['retracted']}")
+              f"changed={stats['changed']} retracted={stats['retracted']} xcheck={xs}")
 
 
 def cmd_eval(args) -> None:
@@ -146,6 +157,9 @@ def cmd_eval(args) -> None:
         print(f"  generator units            gold {s['gold_units']}, extracted {s['pred_units']}"
               f" ({s['pred_units_passed_checks']} passed checks)")
         print(f"  generator MW               gold {s['gold_mw']}, extracted {s['pred_mw']}")
+        print(f"  cross-check flagged permits with missed units  {pct(*s['xcheck_caught'])}")
+        print(f"  cross-check false alarms                       {pct(*s['xcheck_false_alarms'])}"
+              f"  (no ID references found: {s['xcheck_no_reference']})")
 
     show("All", permits)
     if args.set == "dev":
@@ -154,6 +168,12 @@ def cmd_eval(args) -> None:
         show("Digital PDFs", [p for p in permits if p["kind"] == "digital"])
         show("Scanned PDFs", [p for p in permits if p["kind"] == "scanned"])
 
+    print("\n## Cross-check by permit")
+    for p in permits:
+        x = p["xcheck"]
+        miss = f" missing {', '.join(x['missing'][:6])}{'...' if len(x['missing']) > 6 else ''}" if x["missing"] else ""
+        print(f"  {p['listing_key']:9} {x['status']:12} conditions={x['condition_ids']:3} "
+              f"table={x['table_ids']:3}{miss}")
     print("\n## Errors")
     for p in permits:
         tag = "seen" if p["tuned"] else "unseen"

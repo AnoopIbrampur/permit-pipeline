@@ -1,0 +1,29 @@
+
+## All (7 permits)
+  rows found (recall)        29/29 = 100%
+  rows real (precision)      29/29 = 100%
+  count                      29/29 = 100%
+  equipment_class            29/29 = 100%
+  manufacturer               29/29 = 100%
+  model                      29/29 = 100%
+  unit_kw                    29/29 = 100%
+  section                    29/29 = 100%
+  ref_ids                    29/29 = 100%
+  rows fully correct         29/29 = 100%
+    of rows that passed checks 29/29 = 100%
+    of rows held for review    n/a
+  generator units            gold 674, extracted 674 (674 passed checks)
+  generator MW               gold 1933.9, extracted 1933.9
+  cross-check flagged permits with missed units  n/a
+  cross-check false alarms                       0/7 = 0%  (no ID references found: 0)
+
+## Cross-check by permit
+  74150-3   ok           conditions= 40 table= 40
+  74239-2   ok           conditions= 70 table= 70
+  74265-3   ok           conditions=121 table=121
+  74321-2   ok           conditions=192 table=192
+  74332-2   ok           conditions= 32 table= 32
+  74342-2   ok           conditions=103 table=103
+  74348-1   ok           conditions=116 table=116
+
+## Errors

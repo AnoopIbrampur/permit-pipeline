@@ -102,3 +102,35 @@ Why rows were lost, by units affected:
 
 Any fix made against these 7 turns them into another development set; the next honest
 score needs another fresh sample.
+
+## Cross-check and fixes (2026-10-12, after the test result)
+
+**Conditions cross-check.** Every permit restates its unit IDs in its conditions
+("(Ref. Nos. 1 through 68, T1, and T2) shall be..."). The pipeline now collects those IDs
+and compares them with the IDs in the equipment table. IDs in the conditions but not the
+table mean rows were missed: the site is marked `incomplete`. An ID counts only if the
+conditions mention it at least twice, which filters one-off typos (LYH10's conditions
+once cite "EG1-EG105", copied from another permit) and OCR misreads ("EG-713").
+
+- Measured while the extractor was still missing rows: it flagged **5 of 5** test permits
+  and **2 of 2** dev permits that had missed units.
+- False alarms now: 1 of 17 evaluated permits (Microsoft East Coast, whose conditions
+  cite ENG111-ENG112, which its table does not list: a real inconsistency in the permit).
+- Limit: it can only compare IDs it can parse. Rows whose IDs do not parse are reported
+  as `unchecked_rows` instead of passing silently.
+
+**Fixes.** One ID-list parser for tables, scans and conditions ("1 through 22",
+"1, 2, 12, 17, 18, 19, and 36", "D1-D7", "EG5-H1", "EG-DD1A-01 through EG-DD1A-24");
+maker = the one named first; and, the main one, **digital tables are rebuilt from
+PyMuPDF table detection**, because PDF text layers often list a multi-row table column
+by column (all IDs, then all descriptions), which no line-based rule can pair back up.
+
+| | Dev (10) | Test (7) |
+|---|---|---|
+| Rows found | 98% | 100% |
+| Rows fully correct | 94% | 100% |
+| Generator units | 672 / 672 | 674 / 674 |
+
+**The test column is no longer a held-out score**: these fixes were made after looking at
+the test permits' failures. The last honest held-out number is the one above (55% of rows,
+70% of units). The next honest number needs a third, untouched sample.

@@ -1,0 +1,109 @@
+
+## All (10 permits)
+  rows found (recall)        51/52 = 98%
+  rows real (precision)      51/52 = 98%
+  count                      51/51 = 100%
+  equipment_class            51/51 = 100%
+  manufacturer               50/50 = 100%
+  model                      49/50 = 98%
+  unit_kw                    47/49 = 96%
+  section                    50/50 = 100%
+  ref_ids                    51/51 = 100%
+  rows fully correct         48/51 = 94%
+    of rows that passed checks 48/50 = 96%
+    of rows held for review    0/1 = 0%
+  generator units            gold 672, extracted 672 (668 passed checks)
+  generator MW               gold 1708.8, extracted 1702.3
+  cross-check flagged permits with missed units  n/a
+  cross-check false alarms                       1/10 = 10%  (no ID references found: 1)
+
+## Never seen during development (6 permits)
+  rows found (recall)        17/18 = 94%
+  rows real (precision)      17/18 = 94%
+  count                      17/17 = 100%
+  equipment_class            17/17 = 100%
+  manufacturer               16/16 = 100%
+  model                      15/16 = 94%
+  unit_kw                    15/16 = 94%
+  section                    16/16 = 100%
+  ref_ids                    17/17 = 100%
+  rows fully correct         15/17 = 88%
+    of rows that passed checks 15/16 = 94%
+    of rows held for review    0/1 = 0%
+  generator units            gold 453, extracted 453 (449 passed checks)
+  generator MW               gold 1169.1, extracted 1160.3
+  cross-check flagged permits with missed units  n/a
+  cross-check false alarms                       0/6 = 0%  (no ID references found: 0)
+
+## Seen during development (4 permits)
+  rows found (recall)        34/34 = 100%
+  rows real (precision)      34/34 = 100%
+  count                      34/34 = 100%
+  equipment_class            34/34 = 100%
+  manufacturer               34/34 = 100%
+  model                      34/34 = 100%
+  unit_kw                    32/33 = 97%
+  section                    34/34 = 100%
+  ref_ids                    34/34 = 100%
+  rows fully correct         33/34 = 97%
+    of rows that passed checks 33/34 = 97%
+    of rows held for review    n/a
+  generator units            gold 219, extracted 219 (219 passed checks)
+  generator MW               gold 539.7, extracted 542.0
+  cross-check flagged permits with missed units  n/a
+  cross-check false alarms                       1/4 = 25%  (no ID references found: 1)
+
+## Digital PDFs (6 permits)
+  rows found (recall)        40/40 = 100%
+  rows real (precision)      40/40 = 100%
+  count                      40/40 = 100%
+  equipment_class            40/40 = 100%
+  manufacturer               40/40 = 100%
+  model                      40/40 = 100%
+  unit_kw                    39/39 = 100%
+  section                    40/40 = 100%
+  ref_ids                    40/40 = 100%
+  rows fully correct         40/40 = 100%
+    of rows that passed checks 40/40 = 100%
+    of rows held for review    n/a
+  generator units            gold 635, extracted 635 (635 passed checks)
+  generator MW               gold 1635.6, extracted 1635.6
+  cross-check flagged permits with missed units  n/a
+  cross-check false alarms                       1/6 = 17%  (no ID references found: 1)
+
+## Scanned PDFs (4 permits)
+  rows found (recall)        11/12 = 92%
+  rows real (precision)      11/12 = 92%
+  count                      11/11 = 100%
+  equipment_class            11/11 = 100%
+  manufacturer               10/10 = 100%
+  model                      9/10 = 90%
+  unit_kw                    8/10 = 80%
+  section                    10/10 = 100%
+  ref_ids                    11/11 = 100%
+  rows fully correct         8/11 = 73%
+    of rows that passed checks 8/10 = 80%
+    of rows held for review    0/1 = 0%
+  generator units            gold 37, extracted 37 (33 passed checks)
+  generator MW               gold 73.2, extracted 66.7
+  cross-check flagged permits with missed units  n/a
+  cross-check false alarms                       0/4 = 0%  (no ID references found: 0)
+
+## Cross-check by permit
+  53072-1   ok           conditions= 21 table= 21
+  53259-1   ok           conditions=255 table=255
+  52820-3   ok           conditions=147 table=147
+  72296-5   ok           conditions= 20 table= 22
+  11790-1   ok           conditions=  7 table=  7
+  52299-3   ok           conditions=  2 table=  2
+  71804-4   ok           conditions=  8 table=  8
+  21527-15  incomplete   conditions=167 table=165 missing ENG111, ENG112
+  30142-3   ok           conditions= 41 table= 41
+  53197-2   no_reference conditions=  0 table=  7
+
+## Errors
+  72296-5 [unseen, HELD] 1, 2, 3, and 4: unit_kw: None != '2200'
+  72296-5 [unseen] MISSED 9 and 10 (2 x  )
+  72296-5 [unseen] SPURIOUS row p5: 'Reference Equipment Description Rated Capacity Exemption Cit'
+  11790-1 [seen] EG01-EG06: unit_kw: 2876.164406304 != '2500'
+  71804-4 [unseen] 6-8: model: None != '1,365DQGAB'
