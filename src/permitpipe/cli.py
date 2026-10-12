@@ -122,7 +122,7 @@ def cmd_extract(args) -> None:
         held = sum(r.held for r in rows)
         print(f"{d['listing_key']:9} {d['site_name'][:38]:38} rows={len(rows):3} held={held:2} "
               f"gensets={sum(r.count or 0 for r in gens):4} new={stats['new']} "
-              f"changed={stats['changed']}")
+              f"changed={stats['changed']} retracted={stats['retracted']}")
 
 
 def cmd_status(args) -> None:

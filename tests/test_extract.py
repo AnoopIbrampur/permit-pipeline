@@ -143,3 +143,45 @@ def test_load_units_versions(tmp_path):
     v = con.execute("SELECT version, revision_reason FROM unit_versions "
                     "WHERE record_id = 'VA-52903:ENG140-ENG145' ORDER BY version").fetchall()
     assert [tuple(x) for x in v] == [(1, "new_document"), (2, "correction")]
+
+
+def test_space_separated_ranges_and_shorthand():
+    text = """Equipment List - Equipment at this facility covered by this permit consists of:
+Equipment to be Constructed:
+EG1-20
+EG22-EG41
+EG43-EG62
+Sixty (60) Cummins C3000 D6e engines
+4,308 bhp, each
+"""
+    (row,) = extract([(4, text)])
+    assert len(row.ref_ids) == 60 and row.count == 60 and not row.held
+    assert row.equipment_class == "genset"           # 'engines' under EG IDs
+    assert row.reported_unit == "bhp" and row.kw_assumption   # kW derived, flagged
+
+
+def test_ids_continuing_beside_description_in_scans():
+    text = """Equipment List - Equipment at this facility covered by this permit consists of:
+EG1-2 through EG1-4 | Seven (7) Caterpillar 3516B 2,876 bhp
+EG2-1 through EG2-4 | SR-4-HV emergency diesel 2,000 ekW None
+engine gen-sets (each unit)
+"""
+    (row,) = extract([(4, text)])
+    assert row.ref_ids == ["EG1-2", "EG1-3", "EG1-4", "EG2-1", "EG2-2", "EG2-3", "EG2-4"]
+    assert row.count == 7 and not row.held and row.unit_kw == 2000
+
+
+def test_rows_no_longer_extracted_are_retracted(tmp_path):
+    con = store.connect(tmp_path / "t.db")
+    sha, _ = store.put_document(con, b"permit", source="va_deq", url="u", raw_dir=tmp_path)
+    kw = dict(site_id="VA-1", source_sha=sha, first_seen_at="2026-10-12T05:00:00+00:00",
+              published_at=None)
+    rows = extract([(5, MODERN)])
+    load_units(con, rows, recorded_at="2026-10-12T06:00:00+00:00", **kw)
+    stats = load_units(con, rows[:2], recorded_at="2026-10-12T07:00:00+00:00", **kw)
+    assert stats["retracted"] == 1
+    last = con.execute("SELECT version, review_status, revision_reason FROM unit_versions "
+                       "WHERE record_id = 'VA-1:ENG21' ORDER BY version DESC").fetchone()
+    assert tuple(last) == (2, "retracted", "correction")
+    # retracting is idempotent
+    assert load_units(con, rows[:2], recorded_at="2026-10-12T08:00:00+00:00", **kw)["retracted"] == 0
