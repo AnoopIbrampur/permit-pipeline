@@ -322,3 +322,43 @@ sets
 """
     (row,) = extract([(5, text)])
     assert row.equipment_class == "genset" and row.duty == "non_emergency" and row.count == 96
+
+
+def test_footnote_marks_and_alternative_groupings():
+    text = """Equipment List - Equipment at this facility covered by this permit consists of:
+Equipment Previously Permitted:
+<<row>>
+BYEG1 through
+BYEG60*
+(60) Non-emergency diesel-fired engine gen-sets, Cummins C3250D6E with QSK95-G12 engine
+3,000 ekW / 4,265 bhp
+<<row>>
+BYEG1 through
+BYEG60*
+(60) Non-emergency diesel-fired engine gen-sets, Cummins C3000D6E with QSK95-G12 engine
+3,000 ekW, 4,361 bhp
+<<row>>
+BYPBB1MW
+(1) Emergency diesel-fired engine gen-set Caterpillar C32
+1,000 ekW
+"""
+    rows = extract([(6, text)])
+    assert [(len(r.ref_ids), r.count) for r in rows] == [(60, 60), (1, 1)]
+    assert "alternative_equipment" in rows[0].flags and not rows[0].held
+    assert rows[1].ref_ids == ["BYPBB1MW"] and rows[0].duty == "non_emergency"
+
+
+def test_maker_words_are_not_models():
+    text = """Equipment List - Equipment at this facility consists of:
+<<row>>
+1 through 65
+Sixty-five (65) Rolls Royce MTU Model 16V4000 G84S/DS2250 emergency diesel engine gen-sets
+2,250 ekW
+<<row>>
+1 through 1,332
+One thousand three hundred and thirty-two (1,332) Volvo Penta TWD1683GE-B Emergency Diesel Engine Gen-sets
+932 bhp 685 mkW (625 ekW)
+"""
+    a, b = extract([(5, text)])
+    assert a.model.startswith("16V4000") and b.model == "TWD1683GE-B"
+    assert len(b.ref_ids) == 1332 and b.count == 1332 and b.unit_kw == 625 and not b.held

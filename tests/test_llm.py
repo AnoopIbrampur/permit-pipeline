@@ -38,9 +38,12 @@ def test_count_can_be_grounded_by_words_or_ids():
     assert grounding(model_row(), no_count)["grounded_count"]       # 41 IDs printed
 
 
-def test_duplicate_ids_across_rows_held():
-    rows = to_unit_rows([model_row(), model_row()], TEXT)
-    assert all(r.held for r in rows)
+def test_identical_ids_are_alternatives_partial_overlap_is_held():
+    alt = to_unit_rows([model_row(), model_row(model="16V4000G84S")], TEXT)
+    assert len(alt) == 1 and "alternative_equipment" in alt[0].flags and not alt[0].held
+    text = TEXT + "\nEG-100 through EG-130 (31) MTU Model 16V4000G84S 2,250 ekW"
+    part = to_unit_rows([model_row(), model_row(ref_ids="EG-100 through EG-130", count=31)], text)
+    assert len(part) == 2 and all(r.held for r in part)
 
 
 def test_ids_with_internal_dashes_and_split_models_are_grounded():
@@ -68,3 +71,41 @@ def test_mislabelled_generator_cannot_escape_checks():
                                    manufacturer="Caterpillar", model="3516E", rating_value=2750,
                                    rating_unit="kW")], text)
     assert r.checks["class_consistent"] is False and r.held
+
+
+def _rule_row(ids, count, held=False):
+    from permitpipe.extract import UnitRow
+    r = UnitRow(page=1, raw="", section="new", ref_ids=ids, count=count, count_words=None,
+                count_digits=count, equipment_class="genset", manufacturer="MTU", model="X",
+                fuel=None, duty=None, reported_value=2250, reported_unit="kW", unit_kw=2250,
+                kw_assumption=None, bhp=None)
+    if held:
+        r.checks["ref_ids_match_count"] = False
+    return r
+
+
+def test_merge_fills_only_gaps_and_replaces_held_rows():
+    from permitpipe.llm import merge
+    conditions = [(9, "\n".join(f"Fuel (Ref. Nos. EG1-EG10) shall {i}" for i in range(3)))]
+    rules = [_rule_row([f"EG{i}" for i in range(1, 5)], 4),              # clean, kept
+             _rule_row([f"EG{i}" for i in range(5, 8)], 9, held=True)]   # held, replaceable
+    text = "EG1 through EG4 (4) EG5 through EG7 (3) EG8 through EG10 (3) MTU X 2,250 kW"
+    llm = to_unit_rows([
+        model_row(ref_ids="EG1 through EG4", count=4, model="X", rating_value=2250, rating_unit="kW"),   # overlaps: ignored
+        model_row(ref_ids="EG5 through EG7", count=3, model="X", rating_value=2250, rating_unit="kW"),   # replaces held
+        model_row(ref_ids="EG8 through EG10", count=3, model="X", rating_value=2250, rating_unit="kW"),  # fills the gap
+    ], text)
+    rows, n = merge(rules, llm, conditions)
+    assert n == 2
+    assert sorted(len(r.ref_ids) for r in rows) == [3, 3, 4] and not any(r.held for r in rows)
+
+
+def test_merge_never_adds_ids_the_permit_does_not_name():
+    from permitpipe.llm import merge
+    conditions = [(9, "\n".join(f"Fuel (Ref. Nos. EG1-EG4) shall {i}" for i in range(3)))]
+    rules = [_rule_row([f"EG{i}" for i in range(1, 5)], 4)]
+    llm = to_unit_rows([model_row(ref_ids="EG8 through EG10", count=3, model="X",
+                                  rating_value=2250, rating_unit="kW")],
+                       "EG8 through EG10 (3) MTU X 2,250 kW")
+    rows, n = merge(rules, llm, conditions)
+    assert n == 0 and len(rows) == 1

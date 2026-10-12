@@ -25,7 +25,7 @@ import re
 from pathlib import Path
 
 from .extract import (OEMS, UnitRow, _first_maker, cross_check, equipment_regions, extract,
-                      normalize, parse_id_list, words_to_int)
+                      normalize, parse_id_list, resolve_overlaps, words_to_int)
 from .store import DATA_DIR
 from .units import to_kw
 
@@ -203,14 +203,8 @@ def to_unit_rows(model_rows: list[dict], text: str) -> list[UnitRow]:
             row.flags.append("count_from_ref_ids")
             row.checks.pop("ref_ids_match_count", None)
         out.append(row)
-    owner: dict[str, int] = {}
-    for i, r in enumerate(out):         # same unit ID in two rows -> both held
-        for x in r.ref_ids:
-            if x in owner and owner[x] != i:
-                r.checks["ref_ids_unique"] = False
-                out[owner[x]].checks["ref_ids_unique"] = False
-            owner.setdefault(x, i)
-    return out
+    # identical ID sets are alternatives; partial overlaps hold both rows (same rule as rules)
+    return resolve_overlaps(out)
 
 
 def llm_extract(pages: list[tuple[int, str]], sha: str | None = None) -> list[UnitRow]:
@@ -236,18 +230,48 @@ def _score(rows: list[UnitRow], pages) -> tuple:
             -sum(r.count or 0 for r in rows if not r.held))
 
 
+def merge(rules: list[UnitRow], llm: list[UnitRow], pages) -> tuple[list[UnitRow], int]:
+    """Row-level merge. Every clean rules row is kept. An LLM row is added only if
+      - it passed every check (grounding included),
+      - its unit IDs overlap nothing already accepted, and
+      - those IDs either fill a gap (named in the permit's conditions but missing from
+        the accepted rows) or replace a rules row that was held.
+    A held rules row whose IDs an accepted LLM row covers is dropped; the rest stay held.
+    Returns (rows, number of LLM rows used)."""
+    from .extract import canon_id, condition_ids
+
+    accepted = [r for r in rules if not r.held]
+    taken = {canon_id(x) for r in accepted for x in r.ref_ids}
+    gap = {canon_id(x) for x in condition_ids(pages)} - taken
+    held = [r for r in rules if r.held]
+    held_ids = [{canon_id(x) for x in r.ref_ids} for r in held]
+    used = []
+    for cand in llm:
+        ids = {canon_id(x) for x in cand.ref_ids}
+        if cand.held or not ids or ids & taken:
+            continue
+        replaces = [i for i, h in enumerate(held_ids) if h and h <= ids]
+        if not (ids <= gap or replaces):
+            continue
+        cand.flags.append("filled_by_llm")
+        used.append(cand)
+        taken |= ids
+    covered = {canon_id(x) for r in used for x in r.ref_ids}
+    still_held = [h for h, hid in zip(held, held_ids) if not (hid and hid <= covered)]
+    return accepted + used + still_held, len(used)
+
+
 def hybrid(pages: list[tuple[int, str]], ocr_pages=frozenset(), sha: str | None = None
            ) -> tuple[list[UnitRow], str]:
-    """Rules first; the LLM only when the rules' answer is not clean, and its answer is
-    used only if it scores better on the permit's own checks. Returns (rows, source)."""
+    """Rules first. When the rules' answer is not clean (held rows, or IDs the permit's
+    conditions name are missing), the LLM reads the table and `merge` fills only the
+    gaps, row by row. Returns (rows, source)."""
     rules = extract(pages, ocr_pages)
     rs = _score(rules, pages)
     if rs[0] == 0 and rs[1] == 0:
         return rules, "rules"
     llm = llm_extract(pages, sha)
-    # the LLM's answer has to be better on the permit's checks AND must not lose checked
-    # generators: fewer held rows bought by relabelling or dropping units does not count
-    if llm and _score(llm, pages) < rs and \
-            _checked_generator_units(llm) >= _checked_generator_units(rules):
-        return llm, "llm"
-    return rules, "rules"
+    merged, n = merge(rules, llm, pages)
+    if n == 0 or _checked_generator_units(merged) < _checked_generator_units(rules):
+        return rules, "rules"
+    return merged, f"rules+llm({n})"

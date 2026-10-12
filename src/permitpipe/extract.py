@@ -94,7 +94,7 @@ LEAD_WORD_COUNT_RE = re.compile(rf"^\W*((?:(?:{_NUMWORDS_RE})[\s-]*)+)\b", re.I)
 # EG01, ENG140, B-05, 00GEN-1, A/B10, HGEN
 REF = (r"[A-Z]{1,6}-[A-Z]{0,4}\d{1,3}[A-Z]?-(?:\d{1,3}|[A-Z])\b"   # EG-DD1A-01, EG-3-01, EG-3-H
        r"|[A-Z]{1,6}\d{1,4}-[A-Z]\d{1,3}"       # EG5-H1
-       r"|(?:\d{1,3})?[A-Z]{1,6}(?:/[A-Z])?-?\d{1,4}[A-Z]?(?:-\d{1,3})?|[A-Z]{0,4}GEN|(?:EG|DG)[A-Z]{1,2}")
+       r"|(?:\d{1,3})?[A-Z]{1,6}(?:/[A-Z])?-?\d{1,4}[A-Z]{0,2}(?:-\d{1,3})?|[A-Z]{0,4}GEN|(?:EG|DG)[A-Z]{1,2}")
 REF_RANGE_RE = re.compile(rf"\b({REF})\s*(?:-|to|thru|through)\s*({REF})\b")
 _REF_NUM_RE = re.compile(r"^(.*?)(\d+)$")
 REF_RE = re.compile(rf"\b({REF})\b")
@@ -137,6 +137,7 @@ def _is_header_line(line: str) -> bool:
 
 def normalize(text: str) -> str:
     text = text.replace("–", "-").replace("—", "-").replace("‐", "-").replace("\xa0", " ")
+    text = re.sub(r"(?<=\w)[*\u2020\u2021]+", "", text)     # footnote marks: "BYEG60*", "3,620 ekW*"
     text = re.sub(r"-{2,}", "-", text)
     # OCR: letter O inside a reference ID ("EGO1" -> "EG01")
     text = re.sub(r"\b([A-Z]{1,5})O(\d)", r"\g<1>0\2", text)
@@ -269,7 +270,10 @@ def _starts_row(line: str) -> bool:
 # ---- ID lists: "1 through 22", "1, 2, 12, 17, 18, 19, and 36", "EG1-20", "GEN-97 through
 #      GEN-144", "T1 and T2", "EG5-H1, EG5-H2, and EG6-H2"
 
-_ID_TOK = rf"(?:{REF}|\d{{1,3}})"
+# a bare number ID; "1,332" is one number (1-2 digits, then groups of 3, no space), while
+# "101,102" or "1, 2" stay lists
+_NUM_TOK = r"\d{1,2}(?:,\d{3})+(?!\d)|\d{1,3}"
+_ID_TOK = rf"(?:{REF}|{_NUM_TOK})"
 _ID_SEP = r"(?:\s*(?:-|,|;|and|&|thru|through|to))+\s*"
 ID_LIST_RE = re.compile(rf"{_ID_TOK}(?:{_ID_SEP}{_ID_TOK})*")
 # a line that is only (part of) an ID cell; may open or close with a connector
@@ -292,7 +296,7 @@ def _expand_range(a: str, b: str) -> list[str] | None:
     return [f"{pa}{str(i).zfill(width)}" for i in range(int(na), int(nb) + 1)]
 
 
-_ID_TOKEN_RE = re.compile(rf"({REF}|\d{{1,3}})|\b(through|thru|to|and)\b|(-|,|;|&)", re.I)
+_ID_TOKEN_RE = re.compile(rf"({REF}|{_NUM_TOK})|\b(through|thru|to|and)\b|(-|,|;|&)", re.I)
 
 
 def parse_id_list(text: str) -> list[str]:
@@ -300,7 +304,10 @@ def parse_id_list(text: str) -> list[str]:
     toks: list[tuple[str, str]] = []           # ('id', 'EG1') | ('rng', '-') | ('sep', ',')
     for m in _ID_TOKEN_RE.finditer(normalize(text)):
         if m.group(1):
-            toks.append(("id", m.group(1)))
+            tok = m.group(1)
+            if re.fullmatch(r"\d{1,2}(?:,\d{3})+", tok):
+                tok = tok.replace(",", "")
+            toks.append(("id", tok))
         elif (m.group(2) or "").lower() == "and" or m.group(3) in (",", ";", "&"):
             toks.append(("sep", ","))
         else:
@@ -339,7 +346,7 @@ def parse_id_list(text: str) -> list[str]:
 
 
 def canon_id(x: str) -> str:
-    x = re.sub(r"[\s-]", "", x.upper())
+    x = re.sub(r"[\s,-]", "", x.upper())
     return re.sub(r"(?<!\d)0+(?=\d)", "", x)
 
 
@@ -467,6 +474,7 @@ def _first(patterns: dict[str, str] | list, text: str):
 
 _MODEL_TOK_RE = re.compile(r"[A-Za-z]*\d[\w./,-]*|[A-Z]{2,}[\w./-]*|DS\d+\w*")
 _MODEL_STOP = {"or", "each", "kw", "kwe", "ekw", "bhp", "hp", "nsps", "none", "tier"}
+_MAKER_WORDS = {"mtu", "penta", "royce", "rolls", "power", "systems", "engine", "engines"}
 
 
 def _model_tokens(text: str, after_model_word: bool = False) -> str | None:
@@ -476,6 +484,8 @@ def _model_tokens(text: str, after_model_word: bool = False) -> str | None:
     toks = []
     for tok in text.split():
         tok = tok.strip(",;:")
+        if not toks and tok.lower() in _MAKER_WORDS:      # "Rolls Royce MTU 16V4000", "Volvo Penta TWD..."
+            continue
         if re.fullmatch(r"\d+-\d+", tok):
             break
         is_number = re.fullmatch(r"\d[\d,]*(?:\.\d+)?", tok)
@@ -636,17 +646,38 @@ def extract(pages: list[tuple[int, str]], ocr_pages: frozenset[int] = frozenset(
     rows = [parse_row(*r, location_col=loc)
             for r in split_rows(equipment_region(pages), frozenset(ocr_pages))]
     rows = [r for r in rows if r.equipment_class or r.manufacturer or r.ref_ids]
+    return resolve_overlaps(rows)
+
+
+def resolve_overlaps(rows: list[UnitRow]) -> list[UnitRow]:
+    """Two rows over exactly the same unit IDs are alternatives for the same units (one
+    engine option or another; a permit may list four groupings over 120 IDs and say only
+    120 will be built): keep the first, record the others on it. Rows that overlap only
+    partly contradict each other: both are held."""
+    first: dict[frozenset, UnitRow] = {}
+    kept: list[UnitRow] = []
+    for r in rows:
+        key = frozenset(canon_id(x) for x in r.ref_ids)
+        if key and (len(key) > 1 or not next(iter(key)).isdigit()) and key in first:
+            p = first[key]
+            if "alternative_equipment" not in p.flags:
+                p.flags.append("alternative_equipment")
+            p.flags.append(f"alternative:{r.manufacturer or '?'} {r.model or '?'}"
+                           f" {r.unit_kw or '?'} kW")
+            continue
+        first.setdefault(key, r)
+        kept.append(r)
     seen: dict[str, int] = {}
-    for i, r in enumerate(rows):
+    for i, r in enumerate(kept):
         # bare row numbers ("1", "2") in old scans are not facility-wide unit IDs
         dupes = [x for x in r.ref_ids if x in seen and not x.isdigit()]
         if dupes:
             r.checks["ref_ids_unique"] = False
             r.flags.append(f"ref_overlap:{','.join(dupes[:5])}")
-            rows[seen[dupes[0]]].checks["ref_ids_unique"] = False
+            kept[seen[dupes[0]]].checks["ref_ids_unique"] = False
         for x in r.ref_ids:
             seen.setdefault(x, i)
-    return rows
+    return kept
 
 
 # ---------------------------------------------------------------- cross-check

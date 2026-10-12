@@ -212,3 +212,26 @@ What this says: with the gate closed, a 9B model is safe to run but not yet usef
 The permits the rules still miss fail on ID grammar and permit semantics ("1 through
 1,332"; four alternative groupings over the same 120 IDs), and the LLM's output goes
 through the same ID parser and the same checks, so it fails on them too.
+
+## Row-level merge, ID fixes (2026-10-12; all three sets have now been used for fixes)
+
+- **Row-level merge**: the hybrid keeps every clean rules row and adds an LLM row only if
+  it passed every check, overlaps no accepted unit ID, and either fills IDs the permit's
+  conditions name but the table lacks, or replaces a held rules row.
+- **ID grammar**: thousands separators ("1 through 1,332"), footnote marks ("BYEG60*"),
+  two trailing letters ("BYPBB1MW"). Rows over **identical** unit IDs are now alternatives
+  for the same units (kept once, other options recorded); **partial** overlaps are still
+  held as contradictions.
+- Maker-name words are not models ("Rolls Royce MTU 16V4000", "Volvo Penta TWD1683GE-B").
+
+On test2 (no longer held-out), generators passing every check went from 541 to 1,994 of
+2,023; the other 29 are the row where the permit contradicts itself (36 vs 29 IDs), held.
+Scored by printed rows the tool reports 93% found and 89% fully correct; the remaining
+"errors" are the four printed Digital Realty groupings that the extractor now folds into
+two alternative pairs, which is right by true unit count (146 of 146).
+
+**Where that leaves the LLM.** With the parser fixed, the rules handle all 23 evaluated
+permits and the hybrid never calls the model. The ID grammar, not reading ability, was the
+bottleneck: every improvement in coverage today came from parsing the permits' own ID
+formats and semantics. The LLM path stays as a checked fallback for layouts the rules
+haven't seen; whether it earns its place needs permits nobody has looked at.
