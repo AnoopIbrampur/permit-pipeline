@@ -1,7 +1,7 @@
 """permitpipe command line.
 
   permitpipe va-index <saved_index.html>   import a browser-saved VA DEQ index page
-  permitpipe va-pdfs <inbox_dir>           import browser-saved VA permit PDFs
+  permitpipe va-pdfs <dir> [--pattern]     import browser-saved VA permit PDFs
   permitpipe tx-pull                       fetch the TCEQ pending NSR table
   permitpipe status                        counts by source
 """
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 from . import store
@@ -37,15 +38,20 @@ def cmd_va_pdfs(args) -> None:
         m = va_deq._DOC_RE.search(r["doc_url"] or "")
         r["doc_id"] = m.group(1) if m else None
     new = unmatched = 0
-    for pdf in sorted(Path(args.inbox).glob("*.pdf")):
-        hit = va_deq.match_pdf(pdf.name, listings)
+    for pdf in sorted(Path(args.inbox).glob(args.pattern)):
+        hit, note = va_deq.match_pdf(pdf.name, listings)
         if hit is None:
             unmatched += 1
-            print(f"  unmatched: {pdf.name}")
+            print(f"  unmatched  {pdf.name}: {note}")
             continue
+        if note != "exact":
+            print(f"  check      {pdf.name} -> {hit['listing_key']}: {note}")
+        # the browser download time is when we actually retrieved the bytes
+        downloaded = datetime.fromtimestamp(pdf.stat().st_mtime, timezone.utc)
         _, is_new = store.put_document(
             con, pdf.read_bytes(), source=va_deq.SOURCE, url=hit["doc_url"],
-            content_type="application/pdf", published_at=hit["issued_on"])
+            content_type="application/pdf", published_at=hit["issued_on"],
+            retrieved_at=downloaded.isoformat(timespec="seconds"))
         new += is_new
     print(f"imported {new} new PDFs, {unmatched} unmatched")
 
@@ -83,7 +89,8 @@ def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="permitpipe")
     sub = p.add_subparsers(required=True)
     s = sub.add_parser("va-index"); s.add_argument("html"); s.set_defaults(fn=cmd_va_index)
-    s = sub.add_parser("va-pdfs"); s.add_argument("inbox"); s.set_defaults(fn=cmd_va_pdfs)
+    s = sub.add_parser("va-pdfs"); s.add_argument("inbox")
+    s.add_argument("--pattern", default="*_DC_Permit.pdf"); s.set_defaults(fn=cmd_va_pdfs)
     sub.add_parser("tx-pull").set_defaults(fn=cmd_tx_pull)
     sub.add_parser("status").set_defaults(fn=cmd_status)
     args = p.parse_args(argv)

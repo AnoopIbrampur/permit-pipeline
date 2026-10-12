@@ -100,13 +100,31 @@ def import_index(con, html_path: Path, retrieved_at: str | None = None) -> tuple
     return sha, len(rows)
 
 
-def match_pdf(filename: str, listings: list[dict]) -> dict | None:
-    """Match a browser-saved PDF to its listing by registration no. or doc id in the filename."""
-    stem = Path(filename).stem
-    for r in listings:
-        if r["listing_key"] and r["listing_key"] in stem:
-            return r
-    for r in listings:
-        if r.get("doc_id") and re.search(rf"(?<!\d){r['doc_id']}(?!\d)", stem):
-            return r
-    return None
+_FILE_RE = re.compile(r"^(\d{5})-?(\d*)")
+
+
+def match_pdf(filename: str, listings: list[dict]) -> tuple[dict | None, str]:
+    """Match a saved permit PDF to its listing row. Returns (row, note).
+
+    DEQ serves permits as '<reg><seq>_DC_Permit.pdf': a 5-digit registration
+    number followed by the permit sequence, sometimes zero-padded, sometimes
+    absent ('2152715' = 21527-15, '7180403' = 71804-3, '11790' = 11790-1).
+    The sequence in the filename does not always equal the listing's, so a
+    single registration match with a different sequence is accepted but noted.
+    """
+    m = _FILE_RE.match(Path(filename).stem)
+    if not m:
+        return None, "no registration number in filename"
+    base, seq = m.group(1), int(m.group(2)) if m.group(2) else None
+    cands = [r for r in listings if (r["listing_key"] or "").split("-")[0] == base]
+    if not cands:
+        return None, f"registration {base} not in index"
+    if seq is not None:
+        exact = [r for r in cands if r["listing_key"].split("-")[-1].lstrip("0") == str(seq)]
+        if exact:
+            return exact[0], "exact"
+    if len(cands) == 1:
+        note = "registration only" if seq is None else (
+            f"filename seq {seq} != listing {cands[0]['listing_key']}")
+        return cands[0], note
+    return None, f"ambiguous: {base} has {len(cands)} listings"

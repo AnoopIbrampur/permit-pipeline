@@ -24,11 +24,18 @@ def test_va_url_ticks_decode_to_upload_time():
     assert va_deq.ticks_to_utc(638627840699300000) == "2024-09-24T14:14:29+00:00"
 
 
-def test_va_match_pdf_by_reg_no_or_doc_id():
-    rows = va_deq.parse_index((FIX / "va_index_sample.html").read_text())
-    assert va_deq.match_pdf("11790-1 permit.pdf", rows)["listing_key"] == "11790-1"
-    assert va_deq.match_pdf("showpublisheddocument_25642.pdf", rows)["listing_key"] == "21527-7"
-    assert va_deq.match_pdf("unrelated.pdf", rows) is None
+def test_va_match_pdf_deq_filenames():
+    keys = ["11790-1", "21527-7", "21527-15", "71804-3", "71804-4", "30142-3", "52221-9"]
+    rows = [{"listing_key": k} for k in keys]
+    match = lambda f: (lambda r, n: (r and r["listing_key"], n))(*va_deq.match_pdf(f, rows))
+    assert match("2152715_DC_Permit.pdf") == ("21527-15", "exact")
+    assert match("7180403_DC_Permit.pdf") == ("71804-3", "exact")
+    assert match("522219_DC_Permit.pdf") == ("52221-9", "exact")
+    assert match("11790_DC_Permit.pdf") == ("11790-1", "registration only")
+    assert match("3014202_DC_Permit.pdf")[0] == "30142-3"          # seq differs, noted
+    assert "seq 2" in match("3014202_DC_Permit.pdf")[1]
+    assert match("21527_DC_Permit.pdf")[0] is None                 # ambiguous
+    assert match("99999_DC_Permit.pdf")[0] is None
 
 
 def test_tx_parse_and_flag():
