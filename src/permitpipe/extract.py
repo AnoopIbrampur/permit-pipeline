@@ -92,7 +92,8 @@ LEAD_DIGIT_COUNT_RE = re.compile(r"^\W*(\d{1,4})\s+(?=[A-Z][a-z])")
 LEAD_WORD_COUNT_RE = re.compile(rf"^\W*((?:(?:{_NUMWORDS_RE})[\s-]*)+)\b", re.I)
 
 # EG01, ENG140, B-05, 00GEN-1, A/B10, HGEN
-REF = (r"[A-Z]{1,6}-[A-Z]{0,4}\d{1,3}[A-Z]?-(?:\d{1,3}|[A-Z])\b"   # EG-DD1A-01, EG-3-01, EG-3-H
+REF = (r"[A-Z]{1,6}-[A-Z]{1,4}-\d{1,4}\b"                          # EG-GR-1
+       r"|[A-Z]{1,6}-[A-Z]{0,4}\d{1,3}[A-Z]?-(?:\d{1,3}|[A-Z])\b"   # EG-DD1A-01, EG-3-01, EG-3-H
        r"|[A-Z]{1,6}\d{1,4}-[A-Z]\d{1,3}"       # EG5-H1
        r"|(?:\d{1,3})?[A-Z]{1,6}(?:/[A-Z])?-?\d{1,4}[A-Z]{0,2}(?:-\d{1,3})?|[A-Z]{0,4}GEN|(?:EG|DG)[A-Z]{1,2}")
 REF_RANGE_RE = re.compile(rf"\b({REF})\s*(?:-|to|thru|through)\s*({REF})\b")
@@ -718,8 +719,10 @@ def cross_check(rows: list[UnitRow], pages: list[tuple[int, str]]) -> dict:
     cond = {canon_id(x) for x in condition_ids(pages)}
     missing = sorted(cond - table, key=lambda x: (len(x), x))
     # combustion rows whose IDs did not parse (or fall short of the count) cannot be checked
+    # power-producing rows whose IDs could not be read (or fall short of the count) cannot be
+    # checked against the conditions; an unreadable ID shape must not look like "nothing missing"
     unchecked = sum(1 for r in rows if r.equipment_class in COMBUSTION and r.section != "exempt"
-                    and r.count and len(r.ref_ids) < r.count)
+                    and ((r.count and len(r.ref_ids) < r.count) or (r.held and not r.ref_ids)))
     status = ("no_reference" if not cond else "incomplete" if missing
               else "unchecked_rows" if unchecked else "ok")
     return {"status": status, "condition_ids": len(cond), "table_ids": len(table),

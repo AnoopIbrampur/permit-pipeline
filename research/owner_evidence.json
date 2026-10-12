@@ -156,6 +156,34 @@
           "claim": "Facebook's White Oak Technology Park data center"
         }
       ]
+    },
+    {
+      "site_id": "VA-74336",
+      "role": "developer",
+      "company": "Starwood Capital Group",
+      "link_type": "direct",
+      "evidence": [
+        {
+          "kind": "permit",
+          "page": 1,
+          "claim": "permittee 13832 Redskin Acquisition, LP; DEQ lists the site as Word of Grace Data Center (Fairfax County)"
+        },
+        {
+          "kind": "press",
+          "url": "https://commercialobserver.com/2025/12/starwood-data-center-washington-commanders/",
+          "claim": "Starwood plans Word of Grace data centers on the former church site next to its Renaissance Technology Park"
+        },
+        {
+          "kind": "press",
+          "url": "https://www.connectcre.com/stories/former-commanders-practice-facility-in-herndon-sells-for-25m/",
+          "claim": "a Starwood affiliate bought the Word of Grace property at 13832 Redskin Drive for $25 million"
+        },
+        {
+          "kind": "local_government",
+          "url": "https://www.ffxnow.com/2025/12/16/herndon-site-near-future-western-high-school-deemed-suitable-for-data-center/",
+          "claim": "Fairfax County found the site suitable for a data center, requested to support a DEQ air permit application"
+        }
+      ]
     }
   ]
 }

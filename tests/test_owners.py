@@ -80,3 +80,27 @@ def test_validation_rejects_weak_links():
     problems = validate_research(weak)
     assert "outside evidence rests on a single directory listing" in problems
     assert any("direct link needs" in p for p in problems)
+
+
+def test_addressee_without_honorific_and_without_location_line():
+    a = """June 1, 2026
+Jordan Example
+Authorized Representative
+c/o Ms. Someone Else
+Amazon Data Services, Inc.
+13820 Sunrise Valley Drive
+Herndon, VA 20171
+Location:  Spotsylvania County
+"""
+    c = parse_cover_letter(a)
+    assert c.entities == ["Amazon Data Services, Inc."] and "Jordan" not in c.quote
+    b = """May 22, 2026
+Ms. Pat Placeholder
+Vice President
+13832 Redskin Acquisition, LP
+14555 Avion Parkway, Suite 110
+Chantilly, VA 20151
+Dear Ms. Placeholder:
+"""
+    c = parse_cover_letter(b)
+    assert c.entities == ["13832 Redskin Acquisition, LP"] and c.address.startswith("14555 Avion")

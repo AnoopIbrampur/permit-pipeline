@@ -235,3 +235,26 @@ permits and the hybrid never calls the model. The ID grammar, not reading abilit
 bottleneck: every improvement in coverage today came from parsing the permits' own ID
 formats and semantics. The LLM path stays as a checked fallback for layouts the rules
 haven't seen; whether it earns its place needs permits nobody has looked at.
+
+## Fresh held-out score (test3, 2026-10-12): 5 permits nobody had looked at
+
+Labelled from page images first, scored once with the code frozen at `dc0179a`. 563
+generators (Manassas, Loudoun, Spotsylvania, Fairfax, Stafford; issued Apr-Jun 2026).
+
+| | Rules | Hybrid |
+|---|---|---|
+| Rows found | 87% (13/15) | 87% |
+| Found rows fully correct | 100% | 100% |
+| Generators passing every check | 368 of 563 (65%) | 368 |
+| Wrong generator counts accepted | 0 | 0 |
+
+Four permits exact. The fifth (Cashvad Ventures, 195 non-emergency units) uses unit IDs of
+a new shape, "EG-GR-1 through EG-GR-195": both rows were held, so nothing wrong was
+counted, but the site cross-check reported "ok" because it could not read those IDs in
+the conditions either. The LLM did not help: its rows go through the same ID parser.
+Compared with the previous held-out round (67% found, 70% correct), the work since then
+generalised, and every miss was held rather than passed.
+
+Fixed afterwards (not part of this score): IDs shaped "EG-GR-1"; and the cross-check now
+reports "unchecked_rows" for any held power-producing row whose unit IDs it could not
+read, instead of "ok".

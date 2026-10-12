@@ -1,0 +1,37 @@
+[
+ {
+  "listing_key": "74118-3",
+  "site_name": "Cashvad Ventures LLC",
+  "sha256": "30a06d32f7ba9953383a6c7597ddf6640a252a84117275c32a8f08a42956768c",
+  "kind": "digital",
+  "tuned": false
+ },
+ {
+  "listing_key": "74205-4",
+  "site_name": "Amazon Data Services Inc IAD-120/121/122",
+  "sha256": "1ee71bb0b15e54a2ca354a6896ae18f296233bf5fe15fbe5dc7b47985aa82451",
+  "kind": "digital",
+  "tuned": false
+ },
+ {
+  "listing_key": "74288-2",
+  "site_name": "Amazon Data Services Inc. IAD450 Cosner Tech Campus",
+  "sha256": "f77540cdd9bf3688f39e4c7c594d84d9c94348088e2398fcdfd67ebf658d6e5e",
+  "kind": "digital",
+  "tuned": false
+ },
+ {
+  "listing_key": "74336-1",
+  "site_name": "Word of Grace Data Center",
+  "sha256": "35244a58a6445ec5b3962d8292464972c160e8ecd90c0754ae76fb855601bc41",
+  "kind": "digital",
+  "tuned": false
+ },
+ {
+  "listing_key": "74338-1",
+  "site_name": "Vantage Data Centers VA41 LLC",
+  "sha256": "b36bf80fb0abf1e4e7675dc2b042688dcedbaf875e26cbccc0f11c00d3d95037",
+  "kind": "digital",
+  "tuned": false
+ }
+]

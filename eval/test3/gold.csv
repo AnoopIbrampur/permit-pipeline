@@ -1,0 +1,16 @@
+listing_key,page,section,ref_ids,count,equipment_class,manufacturer,model,unit_kw,notes
+74118-3,5,new,EG-GR-1 through EG-GR-30,30,genset,Caterpillar,C175-20,4000,non-emergency; SCR + cDPF
+74118-3,5,new,EG-GR-31 through EG-GR-195,165,genset,Caterpillar,3516E,3000,non-emergency; SCR + cDPF
+74118-3,5,new,CT1 through CT10,10,cooling_tower,,,,1715 gpm
+74205-4,5,new,55,1,genset,Caterpillar,3512C,1600,
+74205-4,5,existing,1 through 52,52,genset,Caterpillar,3516C-HD,2500,
+74205-4,5,existing,53 and 54,2,genset,Caterpillar,C18,600,
+74205-4,5,existing,T1 and T2,2,genset,Caterpillar,3516C,2000,transitory
+74288-2,5,new,ADM-01 and LOG-01,2,genset,Caterpillar,C13,400,
+74288-2,5,existing,EG-01 through EG-186,186,genset,Caterpillar,3516E,2750,non-emergency; SCR + cDPF
+74288-2,5,existing,"PMP-01, PMP-02, SKI-01, SKI-02, and IWB-01",5,genset,Caterpillar,3512C,1600,
+74288-2,5,existing,HS-01 through HS-07,7,genset,Caterpillar,C18,750,
+74288-2,5,existing,SEC-01,1,genset,Caterpillar,C9,250,
+74336-1,5,new,EG-001 through EG-060,60,genset,Caterpillar,3516E,3100,emergency with SCR + cDPF (Safety Power ecoCUBE)
+74336-1,5,new,PBB-001 and PBB-002,2,genset,Caterpillar,3512C,1500,
+74338-1,5,new,EG-01 through EG-48,48,genset,Caterpillar,3516E,2750,

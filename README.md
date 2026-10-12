@@ -10,34 +10,31 @@ The write-up of what the data shows is in [FINDINGS.md](FINDINGS.md).
 
 ## What came out of it
 
-From 42 of the 194 permits DEQ lists (41 sites):
+From 47 of the 194 permits DEQ lists (46 sites):
 
-- 3,190 generators, 8.6 GW, at 37 sites, that pass every consistency check
-- 1,439 more held for review, 1,332 of them at one campus whose unit IDs the parser
-  can't read yet
-- 266 non-emergency generators (739 MW), all in permits issued in 2026
-- SCR mentioned in 9 of 20 permits issued in 2026, against 1 of 22 before
-- every site linked to a company; six needed outside records because the permit was
-  filed by an LLC that doesn't name its parent
+- 5,370 generators, 11.8 GW, at 43 sites, that pass every consistency check; 106 held
+- 767 non-emergency generators (2.2 GW) at five sites, all in permits issued in 2026
+- SCR mentioned in 12 of 25 permits issued in 2026, against 1 of 22 before
+- 45 of 46 sites linked to a company; eight were filed by LLCs that don't name their
+  parent, and one of those is still unresolved
 
 ## How far to trust it
 
 I scored the extractor against hand labels typed from page images, never from the text
-the extractor reads. Three rounds:
+the extractor reads, on permits it had never seen, three times:
 
-| | Permits | Rows found | Found rows fully correct |
+| Held-out round | Permits | Rows found | Found rows fully correct |
 |---|---|---|---|
-| Development set (fixed against) | 10 | 98% | 94% |
-| First test, before fixes | 7 | 55% | 75% |
-| Final test, never looked at before scoring | 6 | 67% | 70% |
+| First | 7 | 55% | 75% |
+| Second | 6 | 67% | 70% |
+| Third | 5 | 87% | 100% |
 
-The last row is the honest number. Each new batch brought table layouts the first ones
-didn't have, and a rule-based extractor only knows what it has seen.
-
-What held up was the checking. In the final test no wrong generator count got through:
-the four permits with problems were all flagged, and the two marked clean were exactly
-right. The cost is coverage, since a lot of real data sits in the review queue. Details
-and the full error lists are in [eval/README.md](eval/README.md).
+Each round's failures were fixed before the next, so each number describes the code as
+it was at that point. In the third round no wrong generator count got through: 368 of
+563 generators passed every check and the rest were held because of one unit-ID format
+the parser hadn't seen. A local LLM fallback is wired in too, with the permit's checks
+deciding what it may add; it is safe, but on these permits it no longer adds anything.
+Details, per-round error lists and the LLM story are in [eval/README.md](eval/README.md).
 
 ## How it works
 
@@ -86,7 +83,8 @@ permitpipe va-pdfs ~/Downloads     # DEQ's own file names, e.g. 2152715_DC_Permi
 permitpipe ocr                     # page text, cached per document hash
 permitpipe extract                 # unit records, checks, cross-check
 permitpipe owners                  # site -> company links
-permitpipe eval --set test2        # score against hand labels (dev | test | test2)
+permitpipe eval --set test3        # score against hand labels (dev | test | test2 | test3)
+permitpipe extract --mode hybrid   # rules first, local LLM only where the rules fall short
 ```
 
 `permitpipe tx-pull` fetches the Texas TCEQ list of pending air permit applications,
@@ -101,6 +99,7 @@ committed.
 src/permitpipe/
   store.py      raw document store and schema
   ocr.py        text layer, table detection, Tesseract
+  llm.py        local-LLM fallback (Ollama), grounding checks, row-level merge
   extract.py    equipment rows, ID lists, checks, cross-check, versioned loading
   owners.py     cover letters, company links, evidence rules
   evaluate.py   scoring against hand labels
@@ -108,15 +107,15 @@ src/permitpipe/
   sources/      va_deq.py, tx_tceq.py
 eval/           samples, hand labels and results for each round
 research/       hand-researched ownership evidence
-tests/          55 tests, many built from real permit text
+tests/          68 tests, many built from real permit text
 ```
 
 ## Known gaps
 
-- 152 of DEQ's 194 permits haven't been read. The sample is the first 29 by
-  registration number plus 13 recent ones, so it isn't representative of the state.
-- Formats the last test exposed are not handled yet: several equipment tables in one
-  permit, footnote marks on unit IDs ("BYEG60*"), and thousands separators in ID ranges.
+- 147 of DEQ's 194 permits haven't been read. The sample is the first 29 by
+  registration number plus 18 recent ones, so it isn't representative of the state.
+- The original-permit-date column is dropped during extraction, so "first permitted"
+  dates had to be checked by hand.
 - Permitted operating hours and emissions tiers are in the permits but not extracted.
 - Four of the ownership links rest on addresses and directory listings rather than
   registry records. Virginia's business registry blocks automated access, so those

@@ -78,6 +78,7 @@ COMPANIES = {
     "Corporate Office Properties (COPT)": r"\bcorporate office properties\b|\bcopt\b",
     "Lincoln Property Company": r"\blincoln property company\b",
     "DP Facilities": r"\bdp facilities\b",
+    "Vantage Data Centers": r"\bvantage data centers\b",
 }
 # what the named company is to the site; everything else defaults to operator
 COMPANY_ROLE = {
@@ -96,6 +97,9 @@ _PERSON_RE = re.compile(r"\b(?:Mr|Mrs|Ms|Mx|Dr)\.?\s+[A-Z][\w'â€™.-]*(?:\s+(?:[â
 def redact_people(text: str) -> str:
     return _PERSON_RE.sub("[person]", text)
 _SALUTATION_RE = re.compile(r"^\s*(mr|mrs|ms|dr|mx)\.?\s", re.I)
+_DATE_LINE_RE = re.compile(r"(january|february|march|april|may|june|july|august|september|october|"
+                           r"november|december)\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{4}", re.I)
+_BARE_NAME_RE = re.compile(r"[A-Z][a-z'\u2019.-]+(?:\s+[A-Z]\.?)?(?:\s+[A-Z][a-z'\u2019.-]+){1,2}")
 _ADDRESS_START_RE = re.compile(r"^\s*(\d{1,6}\s+\S|p\.?\s*o\.?\s*box|one\s|two\s|suite\b)", re.I)
 _CITY_STATE_ZIP_RE = re.compile(r"\b[A-Z]{2}\.?\s+\d{5}(?:-\d{4})?\b|\bVirginia\s+\d{5}\b")
 _ENTITY_RE = re.compile(r"\b(LLC|L\.L\.C\.|Inc\.?|Incorporated|Corporation|Corp\.?|LP|L\.P\.|Ltd|"
@@ -130,34 +134,45 @@ class CoverLetter:
 
 
 def parse_cover_letter(text: str) -> CoverLetter:
-    """Addressee block: [Mr. Name] / [Title] / Entity line(s) / street / city, ST zip /
-    'Location:'. The person's name line is skipped and never returned."""
+    """Addressee block: [Mr. Name | Name] / [Title] / Entity line(s) / street / city, ST zip /
+    'Location:' or 'Dear'. The person's name line is skipped and never returned."""
     lines = [l.strip() for l in text.splitlines()]
     try:
-        end = next(i for i, l in enumerate(lines) if re.match(r"(location|re|registration no)\b", l, re.I))
+        end = next(i for i, l in enumerate(lines)
+                   if re.match(r"(location|re|registration no|dear)\b", l, re.I))
     except StopIteration:
         return CoverLetter()
-    # walk back to the salutation line ("Mr. ...") that opens the block
     start = None
-    for i in range(end - 1, max(end - 14, -1), -1):
+    for i in range(end - 1, max(end - 14, -1), -1):        # "Mr. Name" opens the block
         if _SALUTATION_RE.match(lines[i]):
             start = i + 1
             break
+    if start is None:                                        # else: the line after the date
+        for i in range(end - 1, max(end - 14, -1), -1):
+            if _DATE_LINE_RE.match(lines[i]):
+                start = i + 1
+                break
     if start is None:
         return CoverLetter()
+    block = [l for l in lines[start:end] if l]
+    # a bare name with no honorific ("First Last") directly above the title line is a person
+    if len(block) > 1 and _BARE_NAME_RE.fullmatch(block[0]) and not _ENTITY_RE.search(block[0]) \
+            and _TITLE_RE.search(block[1]):
+        block = block[1:]
     # drop lines that are about a person ("c/o Ms. ...") before anything is kept
-    block = [l for l in lines[start:end] if l and not _PERSON_RE.search(l)]
+    block = [l for l in block if not _PERSON_RE.search(l)]
     out = CoverLetter(quote=redact_people(" / ".join(block)))
     addr: list[str] = []
     for l in block:
-        if addr or _ADDRESS_START_RE.match(l):
+        # "13832 Redskin Acquisition, LP" starts with digits but is an entity, not a street
+        is_entity = bool(re.search(r"\b(LLC|L\.L\.C\.|LP|L\.P\.|Inc\.?|Ltd)\s*\.?$", l))
+        if addr or (_ADDRESS_START_RE.match(l) and not is_entity):
             addr.append(l)
             continue
         if _TITLE_RE.search(l) and not _ENTITY_RE.search(l) and out.title is None:
             out.title = l
             continue
-        if re.match(r"(january|february|march|april|may|june|july|august|september|october|"
-                    r"november|december)\s+\d", l, re.I):
+        if _DATE_LINE_RE.match(l):
             continue
         # "Buildings 3 & 4: Belmont Holdings I, LLC" -> entity after the label
         out.entities.append(re.sub(r"^[^:]{0,40}:\s*", "", l).strip(" ,"))

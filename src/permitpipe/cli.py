@@ -241,7 +241,7 @@ def main(argv: list[str] | None = None) -> None:
     s.set_defaults(fn=cmd_ocr)
     s = sub.add_parser("extract"); s.add_argument("--mode", default="rules", choices=["rules", "hybrid"])
     s.set_defaults(fn=cmd_extract)
-    s = sub.add_parser("eval"); s.add_argument("--set", default="dev", help="dev | test | test2")
+    s = sub.add_parser("eval"); s.add_argument("--set", default="dev", help="dev | test | test2 | test3")
     s.add_argument("--mode", default="rules", choices=["rules", "llm", "hybrid"])
     s.set_defaults(fn=cmd_eval)
     sub.add_parser("owners").set_defaults(fn=cmd_owners)

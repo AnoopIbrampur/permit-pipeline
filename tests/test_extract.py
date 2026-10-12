@@ -362,3 +362,19 @@ One thousand three hundred and thirty-two (1,332) Volvo Penta TWD1683GE-B Emerge
     a, b = extract([(5, text)])
     assert a.model.startswith("16V4000") and b.model == "TWD1683GE-B"
     assert len(b.ref_ids) == 1332 and b.count == 1332 and b.unit_kw == 625 and not b.held
+
+
+def test_letter_group_ids_and_unreadable_ids_are_not_ok():
+    assert len(parse_id_list("EG-GR-1 through EG-GR-195")) == 195
+    from permitpipe.extract import UnitRow
+    row = UnitRow(page=1, raw="", section="new", ref_ids=[], count=None, count_words=None,
+                  count_digits=None, equipment_class="genset", manufacturer="Caterpillar",
+                  model="3516E", fuel=None, duty=None, reported_value=3000, reported_unit="ekW",
+                  unit_kw=3000, kw_assumption=None, bhp=None, checks={"has_count": False})
+    towers = UnitRow(page=1, raw="", section="new", ref_ids=[f"CT{i}" for i in range(1, 11)],
+                     count=10, count_words=None, count_digits=10, equipment_class="cooling_tower",
+                     manufacturer=None, model=None, fuel=None, duty=None, reported_value=None,
+                     reported_unit=None, unit_kw=None, kw_assumption=None, bhp=None)
+    conditions = [(9, "\n".join(f"(Ref. Nos. CT1 through CT10) shall {i}" for i in range(3)))]
+    # every ID the conditions name is in the table, but a held generator row has no IDs at all
+    assert cross_check([row, towers], conditions)["status"] == "unchecked_rows"
