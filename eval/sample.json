@@ -1,0 +1,72 @@
+[
+ {
+  "listing_key": "53072-1",
+  "site_name": "Microsoft Corp - LYH10 Datacenter",
+  "sha256": "82d48c71e32b06bb9c60b9a9f6f612e34da69bda39e9bfc7fcc810611659868a",
+  "kind": "digital",
+  "tuned": false
+ },
+ {
+  "listing_key": "21527-15",
+  "site_name": "Microsoft Corporation - East Coast Data Center",
+  "sha256": "2c24830ce83836adb5b8114974b8e55e35495fa130cdd1adf96298aae5d9c85a",
+  "kind": "digital",
+  "tuned": true
+ },
+ {
+  "listing_key": "30142-3",
+  "site_name": "TECfusions Clarksville LLC",
+  "sha256": "0d976edef6c620d4cbf1540c159b08fec2f32b2064ee91c4cc491a9f95596078",
+  "kind": "digital",
+  "tuned": true
+ },
+ {
+  "listing_key": "53259-1",
+  "site_name": "QTS Richmond V LLC",
+  "sha256": "d05e712d39f0c50fa69756951a1b65ccfe62bc44f814092f25f38abf123a3822",
+  "kind": "digital",
+  "tuned": false
+ },
+ {
+  "listing_key": "53197-2",
+  "site_name": "CLOP Ashland VA LLC",
+  "sha256": "dc0a5afff595e7741ef7f7c0d5f5e241488a8b1e0c99b0c8aac53cee9881f9ce",
+  "kind": "digital",
+  "tuned": true
+ },
+ {
+  "listing_key": "52820-3",
+  "site_name": "Microsoft Corp - LVL Data Center",
+  "sha256": "2c34fa752df20b48c8542da7809aa06382568565c33541200f008ab2c98eae9f",
+  "kind": "digital",
+  "tuned": false
+ },
+ {
+  "listing_key": "72296-5",
+  "site_name": "Coresite Real Estate 12100 Sunrise Valley Drive",
+  "sha256": "8e141b4756ffce63ef51ed464f6906cfc210fe23c3c2a008eeb477524671b2c3",
+  "kind": "scanned",
+  "tuned": false
+ },
+ {
+  "listing_key": "11790-1",
+  "site_name": "DP Facilities Inc South LLC",
+  "sha256": "669aeb79d408fd2441aa752745d36a9ed7a0438ee4ec00f87d2a573f51270513",
+  "kind": "scanned",
+  "tuned": true
+ },
+ {
+  "listing_key": "52299-3",
+  "site_name": "Peak 10 Incorporated",
+  "sha256": "69616a739d1662642e7824c4088fe71aa498338325db7a82d73c3d52102686a7",
+  "kind": "scanned",
+  "tuned": false
+ },
+ {
+  "listing_key": "71804-4",
+  "site_name": "Vienna Cloud",
+  "sha256": "f0cc6bc653b53724e7001714c4ff42e74a61b63648d89deaa7721e2b693feedb",
+  "kind": "scanned",
+  "tuned": false
+ }
+]

@@ -1,0 +1,117 @@
+
+## All (10 permits)
+  rows found (recall)        39/52 = 75%
+  rows real (precision)      39/45 = 87%
+  count                      37/39 = 95%
+  equipment_class            38/39 = 97%
+  manufacturer               38/38 = 100%
+  model                      25/38 = 66%
+  unit_kw                    37/37 = 100%
+  section                    38/38 = 100%
+  ref_ids                    37/39 = 95%
+  rows fully correct         23/39 = 59%
+    of rows that passed checks 23/39 = 59%
+    of rows held for review    n/a
+  generator units            gold 672, extracted 648 (629 passed checks)
+  generator MW               gold 1708.8, extracted 1660.4
+
+## Never seen during development (6 permits)
+  rows found (recall)        9/18 = 50%
+  rows real (precision)      9/14 = 64%
+  count                      8/9 = 89%
+  equipment_class            8/9 = 89%
+  manufacturer               8/8 = 100%
+  model                      7/8 = 88%
+  unit_kw                    8/8 = 100%
+  section                    8/8 = 100%
+  ref_ids                    8/9 = 89%
+  rows fully correct         6/9 = 67%
+    of rows that passed checks 6/9 = 67%
+    of rows held for review    n/a
+  generator units            gold 453, extracted 433 (420 passed checks)
+  generator MW               gold 1169.1, extracted 1136.0
+
+## Seen during development (4 permits)
+  rows found (recall)        30/34 = 88%
+  rows real (precision)      30/31 = 97%
+  count                      29/30 = 97%
+  equipment_class            30/30 = 100%
+  manufacturer               30/30 = 100%
+  model                      18/30 = 60%
+  unit_kw                    29/29 = 100%
+  section                    30/30 = 100%
+  ref_ids                    29/30 = 97%
+  rows fully correct         17/30 = 57%
+    of rows that passed checks 17/30 = 57%
+    of rows held for review    n/a
+  generator units            gold 219, extracted 215 (209 passed checks)
+  generator MW               gold 539.7, extracted 524.4
+
+## Digital PDFs (6 permits)
+  rows found (recall)        38/40 = 95%
+  rows real (precision)      38/38 = 100%
+  count                      37/38 = 97%
+  equipment_class            37/38 = 97%
+  manufacturer               38/38 = 100%
+  model                      25/38 = 66%
+  unit_kw                    37/37 = 100%
+  section                    38/38 = 100%
+  ref_ids                    37/38 = 97%
+  rows fully correct         23/38 = 61%
+    of rows that passed checks 23/38 = 61%
+    of rows held for review    n/a
+  generator units            gold 635, extracted 624 (624 passed checks)
+  generator MW               gold 1635.6, extracted 1622.3
+
+## Scanned PDFs (4 permits)
+  rows found (recall)        1/12 = 8%
+  rows real (precision)      1/7 = 14%
+  count                      0/1 = 0%
+  equipment_class            1/1 = 100%
+  manufacturer               n/a
+  model                      n/a
+  unit_kw                    n/a
+  section                    n/a
+  ref_ids                    0/1 = 0%
+  rows fully correct         0/1 = 0%
+    of rows that passed checks 0/1 = 0%
+    of rows held for review    n/a
+  generator units            gold 37, extracted 24 (5 passed checks)
+  generator MW               gold 73.2, extracted 38.1
+
+## Errors
+  53259-1 [unseen] HGEN001-HGEN008: equipment_class: None != 'genset'
+  53259-1 [unseen] GEN001-GEN247: model: None != '3516C'
+  72296-5 [unseen] 11 and 12: count: None != '2', ref_ids: '1 ids' != '2 ids'
+  72296-5 [unseen] MISSED EG-16 thru EG-20 (5 x Caterpillar 3516C)
+  72296-5 [unseen] MISSED EG-21 thru EG-28 (8 x Caterpillar 3516C-HD)
+  72296-5 [unseen] MISSED 1, 2, 3, and 4 (4 x Caterpillar 3516)
+  72296-5 [unseen] MISSED EG-13 thru EG-15 (3 x Caterpillar 3516C)
+  72296-5 [unseen] MISSED 9 and 10 (2 x  )
+  72296-5 [unseen] SPURIOUS row p4: 'EG-16 Five (5) Caterpillar diesel 2,000 kW 9 VAC 5-50-410'
+  72296-5 [unseen] SPURIOUS row p4: 'EG-21 . Eight (8) Caterpillar diesel 2,500 kW, 9 VAC 5-50-41'
+  72296-5 [unseen] SPURIOUS row p5: 'EG-13 Three (3) Caterpillar diesel 2,000 kWe 9 VAC 5-50-410'
+  11790-1 [seen] MISSED EG01-EG06 (6 x Cummins QSK78-G12)
+  11790-1 [seen] MISSED EG07 (1 x Cummins QSK19-G8)
+  11790-1 [seen] SPURIOUS row p4: 'EG01- | (6) Cummins QSK78-G12 diesel-fueled'
+  52299-3 [unseen] MISSED 1 (1 x Caterpillar 3516BDITA)
+  52299-3 [unseen] MISSED 2 (1 x Caterpillar 3516BDITA)
+  52299-3 [unseen] SPURIOUS row p4: 'Equipment permitted prior to the date of this permit'
+  71804-4 [unseen] MISSED 1-5 (5 x Cummins 900DQFAD)
+  71804-4 [unseen] MISSED 6-8 (3 x Cummins 1,365DQGAB)
+  71804-4 [unseen] SPURIOUS row p4: 'Tp Equipment Description Rated ele'
+  21527-15 [seen] ENG156-ENG160: model: None != '3516C'
+  21527-15 [seen] ENG155: model: '800' != '800DQCC'
+  21527-15 [seen] ENG153-ENG154: model: None != '1750DQAD'
+  21527-15 [seen] ENG113-ENG152: model: None != 'C3000D6e'
+  21527-15 [seen] ENG66: model: '750' != '750DQCB'
+  21527-15 [seen] ENG62-ENG65: model: None != '2000DQKAB'
+  21527-15 [seen] ENG46-ENG61, ENG67-ENG110: model: None != '2500DQKAN'
+  21527-15 [seen] ENG21-ENG30, ENG34-ENG43: model: None != '3516C'
+  21527-15 [seen] ENG20, ENG31, ENG44: model: None != '3512C'
+  21527-15 [seen] ENG17, ENG32, ENG45: model: None != 'C32C'
+  21527-15 [seen] ENG1-ENG11: model: None != '3516C'
+  21527-15 [seen] ENG161-ENG175: model: None != '3516C'
+  30142-3 [seen] EG1-EG3 and EGR: count: 3 != '4', ref_ids: '3 ids' != '4 ids'
+  30142-3 [seen] MISSED EGHS (1 x Caterpillar 2671)
+  30142-3 [seen] MISSED EGLS (1 x Caterpillar DM8501)

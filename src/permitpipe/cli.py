@@ -4,6 +4,7 @@
   permitpipe va-pdfs <dir> [--pattern]     import browser-saved VA permit PDFs
   permitpipe ocr [--force]                 page text for every stored permit PDF
   permitpipe extract                       equipment rows -> versioned unit records
+  permitpipe eval                          score extraction against eval/gold.csv
   permitpipe tx-pull                       fetch the TCEQ pending NSR table
   permitpipe status                        counts by source
 """
@@ -125,6 +126,52 @@ def cmd_extract(args) -> None:
               f"changed={stats['changed']} retracted={stats['retracted']}")
 
 
+def cmd_eval(args) -> None:
+    from .evaluate import evaluate, summarize
+
+    permits = evaluate()["permits"]
+    pct = lambda a, b: f"{a}/{b} = {100 * a / b:.0f}%" if b else "n/a"
+
+    def show(title, ps):
+        s = summarize(ps)
+        print(f"\n## {title} ({s['permits']} permits)")
+        print(f"  rows found (recall)        {pct(*s['row_recall'])}")
+        print(f"  rows real (precision)      {pct(*s['row_precision'])}")
+        for f, (a, b) in s["field_accuracy"].items():
+            print(f"  {f:26} {pct(a, b)}")
+        print(f"  rows fully correct         {pct(*s['rows_fully_correct'])}")
+        print(f"    of rows that passed checks {pct(*s['passed_checks_fully_correct'])}")
+        print(f"    of rows held for review    {pct(*s['held_fully_correct'])}")
+        print(f"  generator units            gold {s['gold_units']}, extracted {s['pred_units']}"
+              f" ({s['pred_units_passed_checks']} passed checks)")
+        print(f"  generator MW               gold {s['gold_mw']}, extracted {s['pred_mw']}")
+
+    show("All", permits)
+    show("Never seen during development", [p for p in permits if not p["tuned"]])
+    show("Seen during development", [p for p in permits if p["tuned"]])
+    show("Digital PDFs", [p for p in permits if p["kind"] == "digital"])
+    show("Scanned PDFs", [p for p in permits if p["kind"] == "scanned"])
+
+    print("\n## Errors")
+    for p in permits:
+        tag = "seen" if p["tuned"] else "unseen"
+        for r in p["matched"]:
+            bad = [f for f, v in r["fields"].items() if v is False]
+            if bad:
+                g, pr = r["gold"], r["pred"]
+                got = {"count": pr.count, "equipment_class": pr.equipment_class,
+                       "manufacturer": pr.manufacturer, "model": pr.model,
+                       "unit_kw": pr.unit_kw, "section": pr.section,
+                       "ref_ids": f"{len(pr.ref_ids)} ids"}
+                want = dict(g, ref_ids=f"{len(__import__('permitpipe.evaluate', fromlist=['x']).gold_ids(g['ref_ids']))} ids")
+                diffs = ", ".join(f"{f}: {got[f]!r} != {want[f]!r}" for f in bad)
+                print(f"  {p['listing_key']} [{tag}{', HELD' if r['held'] else ''}] {g['ref_ids'][:28]}: {diffs}")
+        for g in p["missed"]:
+            print(f"  {p['listing_key']} [{tag}] MISSED {g['ref_ids'][:28]} ({g['count']} x {g['manufacturer']} {g['model']})")
+        for x in p["spurious"]:
+            print(f"  {p['listing_key']} [{tag}] SPURIOUS row p{x.page}: {x.raw.splitlines()[0][:60]!r}")
+
+
 def cmd_status(args) -> None:
     con = store.connect()
     for row in con.execute(
@@ -141,6 +188,7 @@ def main(argv: list[str] | None = None) -> None:
     s = sub.add_parser("ocr"); s.add_argument("--force", action="store_true")
     s.set_defaults(fn=cmd_ocr)
     sub.add_parser("extract").set_defaults(fn=cmd_extract)
+    sub.add_parser("eval").set_defaults(fn=cmd_eval)
     sub.add_parser("tx-pull").set_defaults(fn=cmd_tx_pull)
     sub.add_parser("status").set_defaults(fn=cmd_status)
     args = p.parse_args(argv)

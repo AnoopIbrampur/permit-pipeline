@@ -1,0 +1,53 @@
+listing_key,page,section,ref_ids,count,equipment_class,manufacturer,model,unit_kw,notes
+53072-1,4,new,ENG1-ENG20,20,genset,Cummins,C3000,3000,
+53072-1,4,new,ENG21,1,genset,Cummins,DFEK,500,
+53259-1,4,new,GEN001-GEN247,247,genset,Caterpillar,3516C,2500,alternatives: MTU 20V4000 DS2500 (2500 kW) or MTU 16V4000 DS2250 (2250 kW)
+53259-1,4,new,HGEN001-HGEN008,8,genset,Caterpillar,C32,1250,
+52820-3,4,new,"EG106-EG125, EG127-EG146",40,genset,Cummins,C3000,3000,
+52820-3,4,new,"EG126, EG147",2,genset,Cummins,DFEK,500,
+52820-3,4,existing,"EG1-EG20, EG22-EG41, EG43-EG62, EG64-EG83, EG85-EG104",100,genset,Cummins,C3000,3000,
+52820-3,5,existing,"EG21, EG42, EG63, EG84, EG105",5,genset,Cummins,DFEK,500,table continues on page 5
+72296-5,4,new,EG-16 thru EG-20,5,genset,Caterpillar,3516C,2000,scanned; IDs written EG-16
+72296-5,4,new,EG-21 thru EG-28,8,genset,Caterpillar,3516C-HD,2500,
+72296-5,5,existing,"1, 2, 3, and 4",4,genset,Caterpillar,3516,2200,bare numeric IDs
+72296-5,5,existing,EG-13 thru EG-15,3,genset,Caterpillar,3516C,2000,
+72296-5,5,exempt,9 and 10,2,boiler,,,,natural gas boilers 2.1 MMBtu/hr; exempt table
+72296-5,5,exempt,11 and 12,2,boiler,,,,natural gas water heaters; exempt table
+11790-1,4,new,EG01-EG06,6,genset,Cummins,QSK78-G12,2500,scanned
+11790-1,4,new,EG07,1,genset,Cummins,QSK19-G8,600,count implied (no number in text)
+52299-3,4,existing,1,1,genset,Caterpillar,3516BDITA,2000,scanned; one unit per row
+52299-3,4,existing,2,1,genset,Caterpillar,3516BDITA,2250,
+71804-4,4,new,1-5,5,genset,Cummins,900DQFAD,900,scanned; numeric range IDs
+71804-4,4,new,6-8,3,genset,Cummins,"1,365DQGAB",1365,model printed with a comma
+21527-15,6,new,ENG161-ENG175,15,genset,Caterpillar,3516C,2500,location column present
+21527-15,6,existing,ENG1-ENG11,11,genset,Caterpillar,3516C,2500,
+21527-15,6,existing,"ENG17, ENG32, ENG45",3,genset,Caterpillar,C32C,1000,
+21527-15,6,existing,"ENG20, ENG31, ENG44",3,genset,Caterpillar,3512C,1500,
+21527-15,6,existing,"ENG21-ENG30, ENG34-ENG43",20,genset,Caterpillar,3516C,2000,
+21527-15,6,existing,"ENG46-ENG61, ENG67-ENG110",60,genset,Cummins,2500DQKAN,2500,
+21527-15,6,existing,ENG62-ENG65,4,genset,Cummins,2000DQKAB,2000,
+21527-15,6,existing,ENG66,1,genset,Cummins,750DQCB,750,
+21527-15,6,existing,ENG113-ENG152,40,genset,Cummins,C3000D6e,3000,
+21527-15,6,existing,ENG153-ENG154,2,genset,Cummins,1750DQAD,1750,
+21527-15,6,existing,ENG155,1,genset,Cummins,800DQCC,800,ID printed 'ENG 155'
+21527-15,6,existing,ENG156-ENG160,5,genset,Caterpillar,3516C,2500,
+30142-3,4,new,"A/B10, C12-C15",5,genset,Caterpillar,3516E,3000,no count stated; count = IDs
+30142-3,4,new,"A/B11, C16, C17",3,genset,Cummins,C3000,3000,
+30142-3,4,new,"D1-D7, D18-D24",14,genset,MTU,20V4000G94S,2500,printed 'Rolls Royce MTU'
+30142-3,4,new,"D8, D25",2,genset,MTU,16V4000G64S,2500,
+30142-3,4,new,"D9, D10, D26, D27",4,genset,Cummins,25000QKAN,2500,
+30142-3,5,new,FP1,1,fire_pump,John Deere,4046TF29DE,,diesel fire pump engine 64 bhp
+30142-3,5,existing,G8,1,genset,Caterpillar,3516B,2250,
+30142-3,5,existing,G9,1,genset,Caterpillar,3516C,2250,
+30142-3,5,existing,EG1-EG3 and EGR,4,genset,Caterpillar,3516B,2250,
+30142-3,5,existing,EG4-EG6,3,genset,Caterpillar,3516B,2250,
+30142-3,5,existing,EG7,1,genset,Caterpillar,3516B,2250,
+30142-3,5,existing,EGHS,1,genset,Caterpillar,2671,800,
+30142-3,5,existing,EGLS,1,genset,Caterpillar,DM8501,250,printed 'Model C DM8501'
+53197-2,5,new,00GEN-1,1,genset,Kohler,KD3000,3000,Kohler/Rehlko; or equivalent
+53197-2,5,new,01GEN-1,1,genset,Kohler,KD3000,3000,
+53197-2,5,new,02GEN-1,1,genset,Kohler,KD3000A,3000,
+53197-2,5,new,03GEN-1,1,genset,Kohler,KD3000A,3000,
+53197-2,5,new,04GEN-1,1,genset,Kohler,KD3000A,3000,
+53197-2,5,new,05GEN-1,1,genset,Kohler,KD3000A,3000,
+53197-2,5,new,HGEN,1,genset,Kohler,500REOZVC,500,
