@@ -195,17 +195,14 @@ def has_location_column(pages: list[tuple[int, str]]) -> bool:
     return bool(m and LOCATION_COL_RE.search(joined[m.end(): m.end() + 600]))
 
 
-def equipment_region(pages: list[tuple[int, str]]) -> list[tuple[int, str]]:
-    """Lines (page, text) of the equipment list table, header lines removed."""
-    joined = "\n".join(f"<<p{n}>>\n{normalize(t)}" for n, t in pages)
-    m = re.search(r"equipment\s+list|equipment at this facility (?:covered by this permit )?consists", joined, re.I)
-    if not m:
-        return []
-    page = int(PAGE_RE.findall(joined[: m.start()])[-1])
-    tail = joined[m.end():]
-    tail = tail[tail.find("\n") + 1:] if "\n" in tail else ""   # rest of the intro sentence
-    end = END_RE.search(tail, 30)
-    region = tail[: end.start()] if end else tail[:6000]
+# where an equipment table starts: "Equipment List - Equipment at this facility consists of",
+# "1. Equipment List -", or just "Equipment at this facility consists of". Not the phrase
+# "specified in the equipment list in the Introduction section" inside the conditions.
+REGION_START_RE = re.compile(
+    r"equipment\s+list\s*[-:\u2013\u2014]|equipment at this facility\b(?:\s+\S+){0,12}?\s+consists", re.I)
+
+
+def _region_lines(region: str, page: int) -> list[tuple[int, str]]:
     out, skip_running_header = [], False
     for line in region.splitlines():
         pm = PAGE_RE.fullmatch(line.strip())
@@ -222,6 +219,30 @@ def equipment_region(pages: list[tuple[int, str]]) -> list[tuple[int, str]]:
             continue
         out.append((page, line.rstrip()))
     return out
+
+
+def equipment_regions(pages: list[tuple[int, str]]) -> list[list[tuple[int, str]]]:
+    """Every equipment table in the permit. Multi-building permits (one combined document
+    per building) carry one table each."""
+    joined = "\n".join(f"<<p{n}>>\n{normalize(t)}" for n, t in pages)
+    regions, pos = [], 0
+    while True:
+        m = REGION_START_RE.search(joined, pos)
+        if not m:
+            break
+        page = int(PAGE_RE.findall(joined[: m.start()])[-1])
+        tail = joined[m.end():]
+        tail = tail[tail.find("\n") + 1:] if "\n" in tail else ""   # rest of the intro sentence
+        end = END_RE.search(tail, 30)
+        region = tail[: end.start()] if end else tail[:6000]
+        regions.append(_region_lines(region, page))
+        pos = m.end() + len(region) + 1
+    return regions
+
+
+def equipment_region(pages: list[tuple[int, str]]) -> list[tuple[int, str]]:
+    """All equipment-table lines (page, text), header lines removed."""
+    return [line for region in equipment_regions(pages) for line in region]
 
 
 _DESC_EVIDENCE_RE = re.compile(

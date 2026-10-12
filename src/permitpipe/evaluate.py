@@ -82,7 +82,8 @@ def _jaccard(a: set, b: set) -> float:
     return len(a & b) / len(a | b) if a | b else 0.0
 
 
-def evaluate(eval_dir: Path = EVAL_DIR) -> dict:
+def evaluate(eval_dir: Path = EVAL_DIR, mode: str = "rules") -> dict:
+    """mode: 'rules' (rule-based extractor), 'llm' (model only, still checked), 'hybrid'."""
     sample = {s["listing_key"]: s for s in json.loads((eval_dir / "sample.json").read_text())}
     gold_by_permit = defaultdict(list)
     with open(eval_dir / "gold.csv") as f:
@@ -95,7 +96,14 @@ def evaluate(eval_dir: Path = EVAL_DIR) -> dict:
         ocr_dir = OCR_DIR / s["sha256"]
         pages = [(int(p.stem[5:8]), p.read_text())
                  for p in sorted(ocr_dir.glob("page-[0-9][0-9][0-9].txt"))]
-        preds = extract(pages, ocr_page_numbers(s["sha256"]))
+        if mode == "rules":
+            preds = extract(pages, ocr_page_numbers(s["sha256"]))
+        elif mode == "llm":
+            from .llm import llm_extract
+            preds = llm_extract(pages, s["sha256"])
+        else:
+            from .llm import hybrid
+            preds, source = hybrid(pages, ocr_page_numbers(s["sha256"]), s["sha256"])
         g_ids = [gold_ids(g["ref_ids"]) for g in golds]
         p_ids = [{canon_id(x) for x in p.ref_ids} for p in preds]
         pairs = sorted(((_jaccard(g_ids[i], p_ids[j]), i, j)

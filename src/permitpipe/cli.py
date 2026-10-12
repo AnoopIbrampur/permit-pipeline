@@ -3,7 +3,7 @@
   permitpipe va-index <saved_index.html>   import a browser-saved VA DEQ index page
   permitpipe va-pdfs <dir> [--pattern]     import browser-saved VA permit PDFs
   permitpipe ocr [--force]                 page text for every stored permit PDF
-  permitpipe extract                       equipment rows -> versioned unit records
+  permitpipe extract [--mode hybrid]       equipment rows -> versioned unit records
   permitpipe eval                          score extraction against eval/gold.csv
   permitpipe owners                        resolve permittee LLCs to companies, with evidence
   permitpipe tx-pull                       fetch the TCEQ pending NSR table
@@ -117,7 +117,11 @@ def cmd_extract(args) -> None:
             continue
         pages = [(int(p.stem[5:8]), p.read_text())
                  for p in sorted(ocr_dir.glob("page-[0-9][0-9][0-9].txt"))]
-        rows = extract(pages, ocr_page_numbers(d["sha256"]))
+        if args.mode == "hybrid":
+            from .llm import hybrid
+            rows, source = hybrid(pages, ocr_page_numbers(d["sha256"]), d["sha256"])
+        else:
+            rows, source = extract(pages, ocr_page_numbers(d["sha256"])), "rules"
         site_id = "VA-" + d["listing_key"].split("-")[0]
         stats = load_units(con, rows, site_id=site_id, source_sha=d["sha256"],
                            first_seen_at=d["retrieved_at"], published_at=d["issued_on"],
@@ -135,14 +139,14 @@ def cmd_extract(args) -> None:
         xs = xc["status"] if xc["status"] != "incomplete" else f"MISSING {len(xc['missing'])}"
         print(f"{d['listing_key']:9} {d['site_name'][:38]:38} rows={len(rows):3} held={held:2} "
               f"gensets={sum(r.count or 0 for r in gens):4} new={stats['new']} "
-              f"changed={stats['changed']} retracted={stats['retracted']} xcheck={xs}")
+              f"changed={stats['changed']} retracted={stats['retracted']} xcheck={xs} via={source}")
 
 
 def cmd_eval(args) -> None:
     from .evaluate import EVAL_DIR, evaluate, summarize
 
     eval_dir = EVAL_DIR if args.set == "dev" else EVAL_DIR / args.set
-    permits = evaluate(eval_dir)["permits"]
+    permits = evaluate(eval_dir, args.mode)["permits"]
     pct = lambda a, b: f"{a}/{b} = {100 * a / b:.0f}%" if b else "n/a"
 
     def show(title, ps):
@@ -235,8 +239,10 @@ def main(argv: list[str] | None = None) -> None:
     s.add_argument("--pattern", default="*_DC_Permit.pdf"); s.set_defaults(fn=cmd_va_pdfs)
     s = sub.add_parser("ocr"); s.add_argument("--force", action="store_true")
     s.set_defaults(fn=cmd_ocr)
-    sub.add_parser("extract").set_defaults(fn=cmd_extract)
-    s = sub.add_parser("eval"); s.add_argument("--set", default="dev", help="dev | test")
+    s = sub.add_parser("extract"); s.add_argument("--mode", default="rules", choices=["rules", "hybrid"])
+    s.set_defaults(fn=cmd_extract)
+    s = sub.add_parser("eval"); s.add_argument("--set", default="dev", help="dev | test | test2")
+    s.add_argument("--mode", default="rules", choices=["rules", "llm", "hybrid"])
     s.set_defaults(fn=cmd_eval)
     sub.add_parser("owners").set_defaults(fn=cmd_owners)
     sub.add_parser("tx-pull").set_defaults(fn=cmd_tx_pull)
