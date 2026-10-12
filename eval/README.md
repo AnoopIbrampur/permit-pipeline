@@ -134,3 +134,39 @@ by column (all IDs, then all descriptions), which no line-based rule can pair ba
 **The test column is no longer a held-out score**: these fixes were made after looking at
 the test permits' failures. The last honest held-out number is the one above (55% of rows,
 70% of units). The next honest number needs a third, untouched sample.
+
+## Final held-out score (2026-10-12): 6 permits nobody had looked at
+
+`eval/test2/`: 6 recent permits (Loudoun, Prince William, Caroline; Jun-Jul 2026),
+**2,023 true generators**. Labelled from page images before looking at extractor output;
+scored with the extractor exactly as committed (`919e852`), unchanged afterwards.
+
+| Permit | True units | Extracted | Passed row checks | Site cross-check |
+|---|---|---|---|---|
+| Amazon IAD-51/56/88/89 | 112 | 119 | 83 | unchecked_rows (permit's own count typo held) |
+| Gainesville Crossing | 229 | 65 | 65 | **incomplete** (only 1 of 3 equipment lists read) |
+| Digital Realty Manassas | 146 | 29 | 25 | **incomplete** ("BYEG60*" IDs not parsed) |
+| Amazon IAD-243-292 | 155 | 155 | 155 | ok |
+| Clean Arc VA-1 | 1,332 | 1,332 | 0 | unchecked_rows ("1 through 1,332" not parsed) |
+| Amazon IAD-264 | 49 | 49 | 49 | ok |
+| **Total** | **2,023** | **1,749** | **377** | 2 ok, 4 flagged |
+
+**Headline.** Taken at face value, the pipeline gets 67% of table rows and 70% of found rows
+fully right. **But it never passed a wrong generator count:** every permit with a
+problem was flagged, by a held row or by the site cross-check, and the 2 sites it marked
+clean (204 units) are exactly right. The cost is coverage: only 204 of 2,023 units
+(10%) come out of fully clean sites; 377 (19%) pass row checks. Errors that do get
+through are labels, not counts: 3 rows typed "engine" instead of generator ("gen-/sets"
+split by a line break) and 2 models read as "MTU".
+
+**The cross-check also caught a labelling error.** The first pass of these labels read
+only Gainesville's first equipment list; the cross-check's "incomplete" flag led to the
+other two (pages 22 and 39, +164 units). The labels were corrected from the page images;
+the extractor was not touched.
+
+New failure modes (not yet fixed, so this score stays held-out):
+1. Several equipment lists in one permit (one per building).
+2. Footnote markers on IDs ("BYEG1 through BYEG60*"), plus a footnote that changes the
+   meaning: four groupings over the same 120 IDs, "only 120 total units".
+3. Thousands separators in IDs ("1 through 1,332").
+4. "gen-/sets" split across lines; maker "Rolls Royce MTU" read as model "MTU".

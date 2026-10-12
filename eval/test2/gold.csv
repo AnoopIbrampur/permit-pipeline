@@ -1,0 +1,31 @@
+listing_key,page,section,ref_ids,count,equipment_class,manufacturer,model,unit_kw,notes
+74063-5,5,new,D1 through D22,22,genset,Caterpillar,3516E,2750,
+74063-5,5,new,"L3, L4, L19 through L21, L29, and L38",7,genset,Caterpillar,3516C-HD,2500,
+74063-5,5,new,H2,1,genset,Caterpillar,C18,600,
+74063-5,5,existing,"L5 through L18, L22 through L28, L30 through L37",29,genset,Caterpillar,3516C-HD,2500,"permit text says Thirty-six (36) but its IDs cover 29 units (L1-L64 = 64 in total); 29 is true, should be held"
+74063-5,5,existing,L1 and L2,2,genset,Caterpillar,3516C-HD,2500,
+74063-5,5,existing,M1 through M16,16,genset,Caterpillar,3516C,2000,
+74063-5,5,existing,L39 through L64,26,genset,Caterpillar,3516C-HD,2500,
+74063-5,5,existing,H1,1,genset,Caterpillar,C18,600,
+74063-5,6,existing,T1 through T4,4,genset,Caterpillar,3516C,2000,transitory equipment previously permitted
+74063-5,6,existing,T5 through T8,4,genset,Caterpillar,3516C,2000,
+74241-4,5,existing,1 through 65,65,genset,MTU,16V4000,2250,location column 'Building 1'
+74241-4,22,existing,66 through 130,65,genset,Caterpillar,3516C,2250,"Building 2: second equipment list in the same permit (first labelling pass missed it; the cross-check caught it)"
+74241-4,39,existing,180 through 228,49,genset,MTU,20V4000,2800,Building 4: third equipment list
+74241-4,39,existing,229 through 277,49,genset,MTU,20V4000,2800,Building 5
+74241-4,39,existing,SEC1,1,genset,MTU,6R0113,150,CSOC; John Deere engine
+74262-4,6,existing,BYPBB1 and BYPBB2,2,genset,Caterpillar,C18,750,building column first
+74262-4,6,existing,BYEG1 through BYEG60,60,genset,Cummins,C3250D6E,3000,"non-emergency; ALTERNATIVE grouping: same IDs as the C3000D6E row; footnote: only 120 units across the four BYEG groupings"
+74262-4,6,existing,BYEG61 through BYEG120,60,genset,Cummins,C3250D6E,3000,alternative grouping (see above)
+74262-4,6,existing,BYEG1 through BYEG60,60,genset,Cummins,C3000D6E,3000,alternative grouping; and/or Caterpillar 3516E
+74262-4,6,existing,BYEG61 through BYEG120,60,genset,Cummins,C3000D6E,3000,alternative grouping
+74262-4,6,existing,BPEG1 through BPEG22,22,genset,Caterpillar,3516E,3000,non-emergency
+74262-4,6,existing,BPPBB1,1,genset,Caterpillar,C18,750,
+74262-4,6,existing,BYPBB1MW,1,genset,Caterpillar,C32,1000,
+74302-1,5,new,1 through 52,52,genset,Cummins,QSK78-G38,2750,non-emergency; C2750D6E
+74302-1,5,new,53 and 54,2,genset,Cummins,QST30-G5,750,
+74302-1,5,new,55 through 150,96,genset,MTU,20V4000,2750,non-emergency; DS2800
+74302-1,5,new,151 through 153,3,genset,MTU,16V2000,1000,
+74302-1,5,new,T1 and T2,2,genset,Caterpillar,3516C,2000,
+74341-1,6,new,1 through 1332,1332,genset,Volvo Penta,TWD1683GE-B,625,"IDs printed '1 through 1,332'; 685 mkW (625 ekW): electrical is 625"
+74349-1,5,new,131 through 179,49,genset,MTU,16V4000,2250,

@@ -1,0 +1,50 @@
+
+## All (6 permits)
+  rows found (recall)        20/30 = 67%
+  rows real (precision)      20/26 = 77%
+  count                      19/20 = 95%
+  equipment_class            17/20 = 85%
+  manufacturer               20/20 = 100%
+  model                      18/20 = 90%
+  unit_kw                    20/20 = 100%
+  section                    20/20 = 100%
+  ref_ids                    20/20 = 100%
+  rows fully correct         14/20 = 70%
+    of rows that passed checks 14/19 = 74%
+    of rows held for review    0/1 = 0%
+  generator units            gold 2143, extracted 1648 (276 passed checks)
+  generator MW               gold 2984.2, extracted 1603.5
+  cross-check flagged permits with missed units  2/3 = 67%
+  cross-check false alarms                       0/3 = 0%  (no ID references found: 0)
+
+## Cross-check by permit
+  74063-5   unchecked_rows conditions=112 table=112
+  74241-4   incomplete   conditions=229 table= 65 missing 66, 67, 68, 69, 70, 71...
+  74262-4   incomplete   conditions=147 table= 27 missing BYEG2, BYEG3, BYEG4, BYEG5, BYEG6, BYEG7...
+  74302-1   ok           conditions=155 table=155
+  74341-1   unchecked_rows conditions=  2 table=  2
+  74349-1   ok           conditions= 49 table= 49
+
+## Errors
+  74063-5 [unseen, HELD] L5 through L18, L22 through : count: 36 != '29'
+  74241-4 [unseen] 1 through 65: model: 'MTU' != '16V4000'
+  74241-4 [unseen] MISSED 66 through 130 (65 x Caterpillar 3516C)
+  74241-4 [unseen] MISSED 180 through 228 (49 x MTU 20V4000)
+  74241-4 [unseen] MISSED 229 through 277 (49 x MTU 20V4000)
+  74241-4 [unseen] MISSED SEC1 (1 x MTU 6R0113)
+  74262-4 [unseen] MISSED BYEG1 through BYEG60 (60 x Cummins C3250D6E)
+  74262-4 [unseen] MISSED BYEG61 through BYEG120 (60 x Cummins C3250D6E)
+  74262-4 [unseen] MISSED BYEG1 through BYEG60 (60 x Cummins C3000D6E)
+  74262-4 [unseen] MISSED BYEG61 through BYEG120 (60 x Cummins C3000D6E)
+  74262-4 [unseen] MISSED BYPBB1MW (1 x Caterpillar C32)
+  74262-4 [unseen] SPURIOUS row p6: 'BYEG1 through'
+  74262-4 [unseen] SPURIOUS row p6: 'BYEG61 through'
+  74262-4 [unseen] SPURIOUS row p6: 'BYEG1 through'
+  74262-4 [unseen] SPURIOUS row p6: 'BYEG61 through'
+  74262-4 [unseen] SPURIOUS row p6: 'BYPBB1MW'
+  74302-1 [unseen] 151 through 153: equipment_class: 'engine' != 'genset'
+  74302-1 [unseen] 55 through 150: equipment_class: 'engine' != 'genset'
+  74302-1 [unseen] 53 and 54: equipment_class: 'engine' != 'genset'
+  74341-1 [unseen] MISSED 1 through 1332 (1332 x Volvo Penta TWD1683GE-B)
+  74341-1 [unseen] SPURIOUS row p6: '1 through'
+  74349-1 [unseen] 131 through 179: model: 'MTU' != '16V4000'
