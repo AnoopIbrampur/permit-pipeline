@@ -55,7 +55,7 @@ CLASSES = [  # first match wins; order matters
     ("fuel_cell", r"fuel cell"),
     ("gas_turbine", r"turbine"),
     ("boiler", r"boiler|water heater"),
-    ("genset", r"generat|gen-?set|engine"),
+    ("genset", r"generat|gen-?\s?set|engine"),
 ]
 COMBUSTION = {"genset", "fire_pump", "engine", "gas_turbine", "boiler", "fuel_cell"}
 
@@ -225,7 +225,7 @@ def equipment_region(pages: list[tuple[int, str]]) -> list[tuple[int, str]]:
 
 
 _DESC_EVIDENCE_RE = re.compile(
-    rf"\(\s*\d+\s*\)|generat|gen-?set|engine|turbine|boiler|tower|tank|pump|heater|fuel cell|"
+    rf"\(\s*\d+\s*\)|generat|gen-?\s?set|engine|turbine|boiler|tower|tank|pump|heater|fuel cell|"
     rf"\d\s*(?:kw|bhp|hp|mmbtu)|\b(?:{'|'.join(sorted(NUMWORD, key=len, reverse=True))})\s+\w", re.I)
 _DESC_START_RE = re.compile(rf"^\W*(?:\(\s*\d|(?:{_NUMWORDS_RE})\b)", re.I)
 
@@ -553,7 +553,7 @@ def parse_row(page: int, text: str, section: str | None, scanned: bool = False,
     cls = _first(CLASSES, desc)
     if cls is None and oem and ref_ids and all(re.match(r"\d*H?(?:EG|GEN|DG)", x) for x in ref_ids):
         cls = "genset"   # "Eight (8) Caterpillar C32" under HGEN001-HGEN008
-    if cls == "genset" and not re.search(r"generat|gen-?set", desc, re.I):
+    if cls == "genset" and not re.search(r"generat|gen-?\s?set", desc, re.I):
         # "Sixty (60) Cummins C3000 D6e engines" under IDs EG1-EG60 are generators
         if any(x.startswith("FP") for x in ref_ids):
             cls = "fire_pump"
@@ -561,7 +561,7 @@ def parse_row(page: int, text: str, section: str | None, scanned: bool = False,
             cls = "engine"
     fuel = ("diesel" if re.search(r"diesel|distillate|ulsd|no\. ?2 fuel", desc, re.I)
             else "natural_gas" if re.search(r"natural gas", desc, re.I) else None)
-    duty = ("non_emergency" if re.search(r"non-?emergency|prime|peak", desc, re.I)
+    duty = ("non_emergency" if re.search(r"non-?\s?emergency|prime|peak", desc, re.I)
             else "emergency" if re.search(r"emergency|backup|back-up|stand-?by", desc, re.I) else None)
 
     elec, mech = [], []

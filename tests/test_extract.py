@@ -307,3 +307,18 @@ def test_cross_check_flags_missing_rows():
     x = cross_check(table, pages)
     assert x["status"] == "incomplete" and x["missing"] == ["ENG42"]
     assert cross_check(table, [(5, MODERN)])["status"] == "no_reference"
+
+
+def test_line_broken_words_in_table_cells():
+    text = """Equipment List - Equipment at this facility consists of the following:
+Equipment to be Constructed:
+<<row>>
+55 through
+150
+(96) MTU 20V4000 DS2800 non-
+emergency diesel-fired engine gen-
+sets
+2,750 ekW
+"""
+    (row,) = extract([(5, text)])
+    assert row.equipment_class == "genset" and row.duty == "non_emergency" and row.count == 96
