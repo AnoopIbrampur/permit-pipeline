@@ -1,0 +1,24 @@
+######## test2 rules @ aa3c1b6
+  rows found (recall)        24/30 = 80%
+  rows real (precision)      24/30 = 80%
+  rows fully correct         21/24 = 88%
+    of rows that passed checks 21/23 = 91%
+  generator units            gold 2143, extracted 1913 (541 passed checks)
+  cross-check flagged permits with missed units  1/2 = 50%
+  cross-check false alarms                       0/4 = 0%  (no ID references found: 0)
+######## test2 llm @ aa3c1b6
+  rows found (recall)        27/30 = 90%
+  rows real (precision)      27/30 = 90%
+  rows fully correct         17/27 = 63%
+    of rows that passed checks 13/22 = 59%
+  generator units            gold 2143, extracted 2031 (457 passed checks)
+  cross-check flagged permits with missed units  1/2 = 50%
+  cross-check false alarms                       0/4 = 0%  (no ID references found: 0)
+######## test2 hybrid @ aa3c1b6
+  rows found (recall)        24/30 = 80%
+  rows real (precision)      24/30 = 80%
+  rows fully correct         12/24 = 50%
+    of rows that passed checks 12/23 = 52%
+  generator units            gold 2143, extracted 1794 (458 passed checks)
+  cross-check flagged permits with missed units  1/2 = 50%
+  cross-check false alarms                       0/4 = 0%  (no ID references found: 0)

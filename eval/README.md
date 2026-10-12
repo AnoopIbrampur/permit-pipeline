@@ -176,3 +176,39 @@ New failure modes (not yet fixed, so this score stays held-out):
 final test were fixed afterwards ("gen- / sets" read as a non-generator engine, and
 "non- / emergency" read as emergency). With them, the final set's fully-correct share
 of found rows is 85% (was 70%); recall is unchanged at 67%.
+
+## LLM fallback (2026-10-12)
+
+`llm.py` asks a local model (qwen3.5:9b through Ollama, temperature 0, JSON schema) to
+read the equipment-list text. Its rows are checked like the rules' rows plus grounding
+checks (every ID, count, model and rating must appear in the text). `--mode hybrid` keeps
+the rules' answer when it is clean and only switches a permit to the LLM's answer when
+that answer does better on the permit's own checks.
+
+Developed on the dev and test sets (prompt v1 -> v2: alternatives are one row; code: count
+from IDs when none is printed, grounding that tolerates "00GEN-1" and split model names).
+
+| LLM alone | v1 | v2 |
+|---|---|---|
+| dev: found rows fully correct | 51% | 91% |
+| dev: correct among rows passing checks | 92% | 98% |
+| test: fully correct / generator units | 97% / 722 of 674 | 100% / 674 of 674 |
+
+**Held-out (test2), code frozen at `aa3c1b6`, scored once:** the hybrid made things
+worse. Found rows fully correct fell from 88% (rules) to 50% (hybrid), and only 59% of
+LLM rows that passed the checks were correct. Cause: on one Amazon permit the model
+labelled all ten generator rows "cooling_tower", the checks only applied to combustion
+equipment, so the mislabelled rows skipped them; the hybrid then preferred that answer
+because it had fewer held rows. A label was a way out of the checks.
+
+**Fix (after seeing the held-out result, so not a held-out number):** every row gets the
+count and grounding checks whatever its label; a row with an engine maker and an
+electrical rating must be power-producing equipment; and the hybrid may only switch to the
+LLM if it does not lose checked generators. Re-scored on the same permits: LLM rows that
+pass the checks are 13/13 correct, and the hybrid now matches the rules (it never picks
+the LLM on any of the 23 evaluation permits).
+
+What this says: with the gate closed, a 9B model is safe to run but not yet useful here.
+The permits the rules still miss fail on ID grammar and permit semantics ("1 through
+1,332"; four alternative groupings over the same 120 IDs), and the LLM's output goes
+through the same ID parser and the same checks, so it fails on them too.

@@ -60,3 +60,11 @@ def test_row_without_printed_count_counts_its_ids():
     (r,) = to_unit_rows([model_row(ref_ids="00GEN-1", count=None, manufacturer="Kohler",
                                    model="KD3000", rating_value=3000, rating_unit="kWe")], text)
     assert r.count == 1 and not r.held and "count_from_ref_ids" in r.flags
+
+
+def test_mislabelled_generator_cannot_escape_checks():
+    text = "D1 through D22 Twenty-two (22) Caterpillar model 3516E emergency diesel engine gen-sets 2,750 kW"
+    (r,) = to_unit_rows([model_row(ref_ids="D1 through D22", count=22, equipment="cooling_tower",
+                                   manufacturer="Caterpillar", model="3516E", rating_value=2750,
+                                   rating_unit="kW")], text)
+    assert r.checks["class_consistent"] is False and r.held

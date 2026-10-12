@@ -189,10 +189,15 @@ def to_unit_rows(model_rows: list[dict], text: str) -> list[UnitRow]:
         row.checks.update(grounding(r, text))
         if ids and r["count"] is not None:
             row.checks["ref_ids_match_count"] = len(ids) == r["count"]
+        # No row opts out of checking by its label: count is always required, and a row
+        # with an engine maker and an electrical rating has to be power-producing
+        # equipment, whatever the model called it.
+        row.checks["has_count"] = r["count"] is not None
+        if maker in OEMS and kw is not None and unit.lower() not in ("bhp", "hp"):
+            row.checks["class_consistent"] = cls in ("genset", "gas_turbine", "fuel_cell")
         if cls in ("genset", "fire_pump", "gas_turbine", "fuel_cell"):
             row.checks["has_manufacturer"] = maker is not None
             row.checks["has_electrical_rating"] = kw is not None or cls == "fire_pump"
-            row.checks["has_count"] = r["count"] is not None
         row.flags.append(f"llm:{MODEL}:{PROMPT_VERSION}")
         if count_from_ids:
             row.flags.append("count_from_ref_ids")
@@ -220,6 +225,10 @@ def llm_extract(pages: list[tuple[int, str]], sha: str | None = None) -> list[Un
 _STATUS_RANK = {"ok": 0, "unchecked_rows": 1, "no_reference": 1, "incomplete": 2}
 
 
+def _checked_generator_units(rows: list[UnitRow]) -> int:
+    return sum(r.count or 0 for r in rows if not r.held and r.equipment_class == "genset")
+
+
 def _score(rows: list[UnitRow], pages) -> tuple:
     """Lower is better: site status, then rows held, then fewer generator units found."""
     x = cross_check(rows, pages)
@@ -236,6 +245,9 @@ def hybrid(pages: list[tuple[int, str]], ocr_pages=frozenset(), sha: str | None 
     if rs[0] == 0 and rs[1] == 0:
         return rules, "rules"
     llm = llm_extract(pages, sha)
-    if llm and _score(llm, pages) < rs:
+    # the LLM's answer has to be better on the permit's checks AND must not lose checked
+    # generators: fewer held rows bought by relabelling or dropping units does not count
+    if llm and _score(llm, pages) < rs and \
+            _checked_generator_units(llm) >= _checked_generator_units(rules):
         return llm, "llm"
     return rules, "rules"
