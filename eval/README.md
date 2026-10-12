@@ -170,3 +170,8 @@ New failure modes (not yet fixed, so this score stays held-out):
    meaning: four groupings over the same 120 IDs, "only 120 total units".
 3. Thousands separators in IDs ("1 through 1,332").
 4. "gen-/sets" split across lines; maker "Rolls Royce MTU" read as model "MTU".
+
+**After scoring (not part of the held-out number):** two line-break bugs seen in the
+final test were fixed afterwards ("gen- / sets" read as a non-generator engine, and
+"non- / emergency" read as emergency). With them, the final set's fully-correct share
+of found rows is 85% (was 70%); recall is unchanged at 67%.
