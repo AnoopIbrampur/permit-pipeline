@@ -44,7 +44,7 @@ def cmd_va_pdfs(args) -> None:
             unmatched += 1
             print(f"  unmatched  {pdf.name}: {note}")
             continue
-        if note != "exact":
+        if note not in ("exact", "registration only"):
             print(f"  check      {pdf.name} -> {hit['listing_key']}: {note}")
         # the browser download time is when we actually retrieved the bytes
         downloaded = datetime.fromtimestamp(pdf.stat().st_mtime, timezone.utc)
