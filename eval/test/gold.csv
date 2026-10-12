@@ -1,0 +1,30 @@
+listing_key,page,section,ref_ids,count,equipment_class,manufacturer,model,unit_kw,notes
+74150-3,5,new,"1, 2, 12, 17, 18, 19, and 36",7,genset,Caterpillar,3516C-HD,2500,
+74150-3,5,existing,3 through 11 and 13 through 16,13,genset,Caterpillar,3516C-HD,2500,
+74150-3,5,existing,20 through 35,16,genset,Caterpillar,3516C-HD,2500,
+74150-3,5,existing,T1 through T4,4,genset,Caterpillar,3516C,2000,
+74239-2,5,new,68,1,genset,Caterpillar,C18,600,
+74239-2,5,existing,1 through 22,22,genset,Cummins,QSK60-G26,2500,
+74239-2,5,existing,23 through 62,40,genset,MTU,16V4000G94S,2500,
+74239-2,5,existing,63 and 64,2,genset,Cummins,QST30-G5,750,
+74239-2,5,existing,65 through 67,3,genset,MTU,12V1600G80S,600,
+74239-2,5,existing,T1 and T2,2,genset,Caterpillar,3516C,2000,transitory units
+74265-3,5,new,EG-81 through EG-121,41,genset,MTU,16V4000G84S,2250,
+74265-3,5,existing,EG-01 through EG-40,40,genset,MTU,16V4000G84S,2250,
+74265-3,5,existing,EG-41 through EG-55,15,genset,MTU,16V4000G84S,2250,
+74265-3,5,existing,EG-56 through EG-80,25,genset,MTU,16V4000G84S,2250,
+74321-2,5,new,GEN-97 through GEN-144,48,genset,Caterpillar,C175-20,3620,nameplate 3620 ekW; usable 3500
+74321-2,5,new,GEN-145 through GEN-192,48,genset,Caterpillar,C175-20,3620,alternative: Cummins C3500D6E 3500 ekW
+74321-2,5,existing,GEN-1 through GEN-48,48,genset,Caterpillar,C175-20,3620,
+74321-2,5,existing,GEN-49 through GEN-96,48,genset,Cummins,C3500D6E,3500,
+74332-2,5,new,GEN-29 through GEN-32,4,genset,MTU,20V4000G94S,3000,"3,490 mkW (3,000 ekW): electrical is 3000"
+74332-2,5,existing,GEN-1 through GEN-28,28,genset,MTU,20V4000G94S,3000,
+74342-2,5,new,99 and 100,2,genset,MTU,12V1600G71S,750,
+74342-2,5,existing,1 through 52,52,genset,Caterpillar,3516E,2750,non-emergency
+74342-2,5,existing,53,1,genset,Caterpillar,C18,750,
+74342-2,5,existing,54,1,genset,Caterpillar,C18,600,
+74342-2,5,existing,55 through 98,44,genset,MTU,20V4000G74S,2800,non-emergency
+74342-2,5,existing,101,1,genset,Caterpillar,C13,400,
+74342-2,5,existing,T1 and T2,2,genset,Caterpillar,3516C,2000,
+74348-1,5,new,EG-1 through EG-112,112,genset,Cummins,QSK78-G36,3000,and/or Caterpillar 3516E 3000 ekW
+74348-1,5,new,"EG5-H1, EG5-H2, EG6-H1, and EG6-H2",4,genset,Cummins,QSK38-G18,1500,either Cummins or Caterpillar 3512C

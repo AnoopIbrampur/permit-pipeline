@@ -69,3 +69,36 @@ has looked at.
 1. Spot-check gold labels for 2-3 permits by hand (labels are Claude's first pass).
 2. Label 5-10 permits nobody has looked at (ideally recent Loudoun/Prince William/Fairfax)
    and report that as the test score.
+
+## Test set (2026-10-12): 7 permits nobody had looked at
+
+`eval/test/`: 7 recent Northern Virginia permits (Loudoun, Fairfax, Prince William,
+Culpeper; issued Jul-Sep 2026), labelled from page images *before* looking at extractor
+output, scored with the extractor exactly as committed (`9b33df2`). All 7 are digital, so
+this says nothing new about scans.
+
+| | Dev set (after fixes) | **Test set** |
+|---|---|---|
+| Rows found (recall) | 98% | **55%** |
+| Rows that are real (precision) | 98% | **73%** |
+| Rows fully correct, of those found | 94% | **75%** |
+| ...of rows that passed checks | 96% | **92%** |
+| ...of rows held for review | n/a | **0% (3/3 held rows were wrong)** |
+| Generator units, extracted / true | 672 / 672 | **473 / 674** |
+| Generator MW, extracted / true | 1,702 / 1,709 | **1,429 / 1,934** |
+
+**The dev score did not carry over.** The fixes fit the 10 permits they were made on;
+newer permits use formats those didn't have. The checks held up better: rows that passed
+were 92% fully correct, and every held row was in fact wrong.
+
+Why rows were lost, by units affected:
+1. Number-only IDs on *digital* pages ("1 through 22", "99 and 100",
+   "1, 2, 12, 17, 18, 19, and 36"): the number-ID rules were only enabled for OCR'd pages.
+   About 190 of the 201 missing units.
+2. "Either Cummins ... or Caterpillar" / "and/or": the maker is chosen by a fixed list
+   order, not by which name comes first in the text (DataBank row credited to Caterpillar).
+3. New ID shapes: "EG5-H1".
+4. Yondr: two rows merged (EG-01..EG-40 picked up EG-41..EG-55).
+
+Any fix made against these 7 turns them into another development set; the next honest
+score needs another fresh sample.

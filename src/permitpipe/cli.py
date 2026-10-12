@@ -127,9 +127,10 @@ def cmd_extract(args) -> None:
 
 
 def cmd_eval(args) -> None:
-    from .evaluate import evaluate, summarize
+    from .evaluate import EVAL_DIR, evaluate, summarize
 
-    permits = evaluate()["permits"]
+    eval_dir = EVAL_DIR if args.set == "dev" else EVAL_DIR / args.set
+    permits = evaluate(eval_dir)["permits"]
     pct = lambda a, b: f"{a}/{b} = {100 * a / b:.0f}%" if b else "n/a"
 
     def show(title, ps):
@@ -147,10 +148,11 @@ def cmd_eval(args) -> None:
         print(f"  generator MW               gold {s['gold_mw']}, extracted {s['pred_mw']}")
 
     show("All", permits)
-    show("Never seen during development", [p for p in permits if not p["tuned"]])
-    show("Seen during development", [p for p in permits if p["tuned"]])
-    show("Digital PDFs", [p for p in permits if p["kind"] == "digital"])
-    show("Scanned PDFs", [p for p in permits if p["kind"] == "scanned"])
+    if args.set == "dev":
+        show("Never seen during development", [p for p in permits if not p["tuned"]])
+        show("Seen during development", [p for p in permits if p["tuned"]])
+        show("Digital PDFs", [p for p in permits if p["kind"] == "digital"])
+        show("Scanned PDFs", [p for p in permits if p["kind"] == "scanned"])
 
     print("\n## Errors")
     for p in permits:
@@ -188,7 +190,8 @@ def main(argv: list[str] | None = None) -> None:
     s = sub.add_parser("ocr"); s.add_argument("--force", action="store_true")
     s.set_defaults(fn=cmd_ocr)
     sub.add_parser("extract").set_defaults(fn=cmd_extract)
-    sub.add_parser("eval").set_defaults(fn=cmd_eval)
+    s = sub.add_parser("eval"); s.add_argument("--set", default="dev", help="dev | test")
+    s.set_defaults(fn=cmd_eval)
     sub.add_parser("tx-pull").set_defaults(fn=cmd_tx_pull)
     sub.add_parser("status").set_defaults(fn=cmd_status)
     args = p.parse_args(argv)

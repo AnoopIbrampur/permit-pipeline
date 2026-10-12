@@ -1,0 +1,41 @@
+
+## All (7 permits)
+  rows found (recall)        16/29 = 55%
+  rows real (precision)      16/22 = 73%
+  count                      14/16 = 88%
+  equipment_class            16/16 = 100%
+  manufacturer               14/16 = 88%
+  model                      14/16 = 88%
+  unit_kw                    16/16 = 100%
+  section                    16/16 = 100%
+  ref_ids                    13/16 = 81%
+  rows fully correct         12/16 = 75%
+    of rows that passed checks 12/13 = 92%
+    of rows held for review    0/3 = 0%
+  generator units            gold 674, extracted 473 (433 passed checks)
+  generator MW               gold 1933.9, extracted 1429.4
+
+## Errors
+  74150-3 [unseen] MISSED 1, 2, 12, 17, 18, 19, and 36 (7 x Caterpillar 3516C-HD)
+  74150-3 [unseen] MISSED 3 through 11 and 13 through  (13 x Caterpillar 3516C-HD)
+  74150-3 [unseen] MISSED 20 through 35 (16 x Caterpillar 3516C-HD)
+  74150-3 [unseen] SPURIOUS row p5: '1, 2, 12, 17,'
+  74150-3 [unseen] SPURIOUS row p5: '3 through 11'
+  74239-2 [unseen, HELD] 63 and 64: count: None != '2', manufacturer: 'MTU' != 'Cummins', model: '12V1600G80S' != 'QST30-G5', ref_ids: '1 ids' != '2 ids'
+  74239-2 [unseen] MISSED 1 through 22 (22 x Cummins QSK60-G26)
+  74239-2 [unseen] MISSED 23 through 62 (40 x MTU 16V4000G94S)
+  74239-2 [unseen] MISSED 65 through 67 (3 x MTU 12V1600G80S)
+  74239-2 [unseen] SPURIOUS row p5: 'Ref. Nos.'
+  74265-3 [unseen, HELD] EG-01 through EG-40: ref_ids: '55 ids' != '40 ids'
+  74265-3 [unseen] MISSED EG-41 through EG-55 (15 x MTU 16V4000G84S)
+  74342-2 [unseen, HELD] 99 and 100: count: None != '2', ref_ids: '1 ids' != '2 ids'
+  74342-2 [unseen] MISSED 1 through 52 (52 x Caterpillar 3516E)
+  74342-2 [unseen] MISSED 53 (1 x Caterpillar C18)
+  74342-2 [unseen] MISSED 54 (1 x Caterpillar C18)
+  74342-2 [unseen] MISSED 55 through 98 (44 x MTU 20V4000G74S)
+  74342-2 [unseen] MISSED 101 (1 x Caterpillar C13)
+  74342-2 [unseen] SPURIOUS row p5: 'Ref. No(s).'
+  74348-1 [unseen] EG-1 through EG-112: manufacturer: 'Caterpillar' != 'Cummins', model: '3516E' != 'QSK78-G36'
+  74348-1 [unseen] MISSED EG5-H1, EG5-H2, EG6-H1, and  (4 x Cummins QSK38-G18)
+  74348-1 [unseen] SPURIOUS row p5: 'EG5-H1,'
+  74348-1 [unseen] SPURIOUS row p5: 'QSK38-G18'

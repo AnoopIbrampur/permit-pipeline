@@ -82,10 +82,10 @@ def _jaccard(a: set, b: set) -> float:
     return len(a & b) / len(a | b) if a | b else 0.0
 
 
-def evaluate() -> dict:
-    sample = {s["listing_key"]: s for s in json.loads((EVAL_DIR / "sample.json").read_text())}
+def evaluate(eval_dir: Path = EVAL_DIR) -> dict:
+    sample = {s["listing_key"]: s for s in json.loads((eval_dir / "sample.json").read_text())}
     gold_by_permit = defaultdict(list)
-    with open(EVAL_DIR / "gold.csv") as f:
+    with open(eval_dir / "gold.csv") as f:
         for g in csv.DictReader(f):
             gold_by_permit[g["listing_key"]].append(g)
 
