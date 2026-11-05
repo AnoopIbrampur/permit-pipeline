@@ -8,6 +8,7 @@
   permitpipe owners                        resolve permittee LLCs to companies, with evidence
   permitpipe tx-pull                       fetch the TCEQ pending NSR table
   permitpipe status                        counts by source
+  permitpipe site                          export current records to site/ (GitHub Pages)
 """
 
 from __future__ import annotations
@@ -231,6 +232,14 @@ def cmd_status(args) -> None:
         print(f"{row['source']}: {row['n']} documents, {row['b'] / 1e6:.1f} MB")
 
 
+def cmd_site(args) -> None:
+    from .site import export
+
+    s = export(Path(args.out)) if args.out else export()
+    print(f"site/data.json: {s['gens_ok']:,} generators ({s['gw_ok']} GW) at {s['sites_with_ok']} sites, "
+          f"{s['gens_held']} held, from {s['permits_read']} permits")
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="permitpipe")
     sub = p.add_subparsers(required=True)
@@ -247,6 +256,7 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("owners").set_defaults(fn=cmd_owners)
     sub.add_parser("tx-pull").set_defaults(fn=cmd_tx_pull)
     sub.add_parser("status").set_defaults(fn=cmd_status)
+    s = sub.add_parser("site"); s.add_argument("--out"); s.set_defaults(fn=cmd_site)
     args = p.parse_args(argv)
     args.fn(args)
 

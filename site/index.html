@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Virginia Data Center Generators</title>
+<meta name="description" content="Every backup generator in 47 Virginia data center air permits, extracted row by row, checked against each permit, and linked to the page it came from.">
+<style>
+/* Layout: one column, max 1120px. Summary first (stats, trust, makers), then a site table that
+   expands into the permit's own equipment rows. Mono for IDs, counts and page refs. */
+:root{
+  --bg:#f6f6f4; --surface:#ffffff; --fg:#1b1c1e; --muted:#62656b; --faint:#8b8e94; --hair:rgba(20,22,26,.1);
+  --accent:#b45309; --accent-soft:rgba(180,83,9,.09); --ok:#1f7a3d; --ok-soft:rgba(31,122,61,.1);
+  --held:#b42318; --held-soft:rgba(180,35,24,.09); --bar:#d6d3cc; --row-hover:rgba(20,22,26,.03);
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e0f10; --surface:#17181a; --fg:#ececec; --muted:#a3a6ab; --faint:#7d8086; --hair:rgba(255,255,255,.1);
+  --accent:#f59e0b; --accent-soft:rgba(245,158,11,.13); --ok:#4ade80; --ok-soft:rgba(74,222,128,.12);
+  --held:#f87171; --held-soft:rgba(248,113,113,.13); --bar:#34363a; --row-hover:rgba(255,255,255,.03); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e0f10; --surface:#17181a; --fg:#ececec; --muted:#a3a6ab; --faint:#7d8086; --hair:rgba(255,255,255,.1);
+  --accent:#f59e0b; --accent-soft:rgba(245,158,11,.13); --ok:#4ade80; --ok-soft:rgba(74,222,128,.12);
+  --held:#f87171; --held-soft:rgba(248,113,113,.13); --bar:#34363a; --row-hover:rgba(255,255,255,.03); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline;text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.kicker{font:500 .7rem/1.4 var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--faint);margin:0}
+.num{font-variant-numeric:tabular-nums}
+
+header{padding-block:48px 8px}
+header .kicker{color:var(--accent)}
+h1{font-size:clamp(1.9rem,4.6vw,2.9rem);line-height:1.08;letter-spacing:-.025em;margin:10px 0 12px;max-width:22ch;text-wrap:balance}
+.lede{color:var(--muted);max-width:68ch;margin:0;font-size:1.02rem}
+.toplinks{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;font-size:.92rem}
+
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--hair);border:1px solid var(--hair);border-radius:14px;overflow:hidden;margin-top:32px}
+.stat{background:var(--surface);padding:16px 18px;min-width:0}
+.stat b{display:block;font-size:1.65rem;letter-spacing:-.03em;line-height:1.15}
+.stat span{font-size:.8rem;color:var(--muted)}
+.stat.held b{color:var(--held)}
+@media (max-width:820px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat:last-child{grid-column:1/-1}}
+
+.panels{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px}
+@media (max-width:820px){.panels{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--hair);border-radius:14px;padding:20px;min-width:0}
+.panel h2{font-size:1rem;margin:6px 0 4px;letter-spacing:-.01em}
+.panel p{margin:0;color:var(--muted);font-size:.88rem}
+table{border-collapse:collapse;width:100%}
+.evalt{margin-top:12px;font-size:.88rem}
+.evalt th{font:500 .68rem var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--faint);text-align:left;padding:6px 8px 6px 0;border-bottom:1px solid var(--hair)}
+.evalt td{padding:7px 8px 7px 0;border-bottom:1px solid var(--hair)}
+.evalt td.r,.evalt th.r{text-align:right}
+.meter{display:inline-block;width:56px;height:6px;border-radius:3px;background:var(--bar);vertical-align:middle;margin-right:8px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent)}
+.makers{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.makers li{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:.86rem}
+.makers .bar{height:10px;border-radius:5px;background:var(--bar);overflow:hidden}
+.makers .bar i{display:block;height:100%;background:var(--accent)}
+.makers .v{white-space:nowrap;text-align:right;color:var(--muted);font-family:var(--mono);font-size:.78rem}
+
+section.explore{margin-top:40px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0 14px}
+.search{flex:1 1 240px;min-width:0;font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--hair);background:var(--surface);color:var(--fg)}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:3px;gap:2px}
+.seg button{font:500 .8rem var(--sans);border:0;background:transparent;color:var(--muted);padding:6px 10px;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.count{font-size:.82rem;color:var(--muted);margin-left:auto}
+
+.tablebox{background:var(--surface);border:1px solid var(--hair);border-radius:14px;overflow-x:auto}
+.sites{min-width:760px;font-size:.88rem}
+.sites th{font:500 .68rem var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--faint);text-align:left;padding:11px 12px;border-bottom:1px solid var(--hair);white-space:nowrap;cursor:pointer;user-select:none}
+.sites th.r,.sites td.r{text-align:right}
+.sites th[aria-sort] ::after{content:""}
+.sites th[aria-sort="descending"]::after{content:" ↓"}
+.sites th[aria-sort="ascending"]::after{content:" ↑"}
+.sites td{padding:11px 12px;border-bottom:1px solid var(--hair);vertical-align:top}
+.siterow{cursor:pointer}
+.siterow:hover td{background:var(--row-hover)}
+.siterow td:first-child{position:relative;padding-left:30px}
+.siterow td:first-child::before{content:"›";position:absolute;left:12px;top:9px;color:var(--faint);font-size:1.05rem;transition:transform .2s}
+.siterow[aria-expanded="true"] td:first-child::before{transform:rotate(90deg)}
+.sname{font-weight:600}
+.ssub{color:var(--faint);font-size:.78rem}
+.pill{display:inline-block;font:500 .72rem var(--sans);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.held{background:var(--held-soft);color:var(--held)}
+.pill.warn{background:var(--accent-soft);color:var(--accent)}
+.pill.plain{background:var(--row-hover);color:var(--muted);border:1px solid var(--hair)}
+.link-type{font-size:.72rem;color:var(--faint)}
+.detail td{background:var(--bg);padding:0}
+.detail-in{padding:14px 16px 18px 30px}
+.evid{margin:0 0 12px;padding:0;list-style:none;font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.units{font-size:.8rem;min-width:820px}
+.units th{font:500 .64rem var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--faint);text-align:left;padding:7px 8px;border-bottom:1px solid var(--hair);white-space:nowrap}
+.units td{padding:7px 8px;border-bottom:1px solid var(--hair);vertical-align:top}
+.units td.r,.units th.r{text-align:right}
+.units tr.dim td{color:var(--faint)}
+.ids{font-family:var(--mono);font-size:.74rem;max-width:180px;overflow-wrap:anywhere}
+.why{display:block;color:var(--held);font-size:.72rem;margin-top:2px}
+.note{color:var(--faint);font-size:.78rem;margin:10px 0 0}
+footer{padding-block:40px 56px;color:var(--faint);font-size:.82rem}
+footer p{margin:0 0 6px;max-width:80ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="kicker">Virginia DEQ air permits · data centers</p>
+    <h1>Every backup generator in 47 Virginia data center permits</h1>
+    <p class="lede">Each permit's equipment table, turned into one row per generator line and checked against the permit's own counts, unit IDs and conditions. Rows that fail a check are held, not guessed. Every row links to the permit page it came from.</p>
+    <div class="toplinks">
+      <a href="https://github.com/AnoopIbrampur/permit-pipeline/blob/main/FINDINGS.md">Read the findings</a>
+      <a href="https://github.com/AnoopIbrampur/permit-pipeline">Code</a>
+      <a href="https://github.com/AnoopIbrampur/permit-pipeline/blob/main/eval/README.md">Evaluation details</a>
+    </div>
+  </header>
+
+  <div class="stats" id="stats" aria-live="polite">
+    <div class="stat"><b class="num">…</b><span>generators passing every check</span></div>
+    <div class="stat"><b class="num">…</b><span>of capacity</span></div>
+    <div class="stat"><b class="num">…</b><span>sites</span></div>
+    <div class="stat"><b class="num">…</b><span>non-emergency units</span></div>
+    <div class="stat held"><b class="num">…</b><span>held for review</span></div>
+  </div>
+
+  <div class="panels">
+    <div class="panel">
+      <p class="kicker">How far to trust it</p>
+      <h2>Scored on permits the extractor had never seen</h2>
+      <p>Hand labels were typed from page images, never from the text the extractor reads. Each round's failures were fixed before the next.</p>
+      <table class="evalt" id="evalt"><thead><tr><th>Held-out round</th><th class="r">Permits</th><th>Rows found</th><th>Found rows fully correct</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="panel">
+      <p class="kicker">Capacity by maker</p>
+      <h2>Share of generator capacity that passes checks</h2>
+      <p>Across all sites in the sample. The sample isn't random, so these describe it, not the state.</p>
+      <ul class="makers" id="makers"></ul>
+    </div>
+  </div>
+
+  <section class="explore">
+    <p class="kicker">Explore</p>
+    <div class="toolbar">
+      <input class="search" id="q" type="search" placeholder="Search a site, company, county or engine model" aria-label="Search sites">
+      <div class="seg" role="group" aria-label="Filter sites">
+        <button type="button" id="f-all" data-f="all" aria-pressed="true">All sites</button>
+        <button type="button" id="f-ne" data-f="ne" aria-pressed="false">Non-emergency</button>
+        <button type="button" id="f-held" data-f="held" aria-pressed="false">Has held rows</button>
+        <button type="button" id="f-llc" data-f="inferred" aria-pressed="false">Owner inferred</button>
+      </div>
+      <span class="count num" id="count"></span>
+    </div>
+    <div class="tablebox">
+      <table class="sites" id="sites">
+        <thead><tr>
+          <th data-k="name">Site</th><th data-k="company">Company</th><th data-k="locality">Locality</th>
+          <th data-k="issued">Permit issued</th><th class="r" data-k="gens_ok" aria-sort="descending">Generators</th>
+          <th class="r" data-k="mw_ok">MW</th><th data-k="check">Cross-check</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="note">Click a site to see the permit's own rows. Generator totals count gensets in the equipment table that pass every check; exempt and non-generator equipment is shown but not counted.</p>
+  </section>
+
+  <footer>
+    <p id="built"></p>
+    <p>The sample is the first 29 permits on DEQ's list by registration number plus 18 recent ones, mostly Northern Virginia. Cover-letter text isn't published here; company links show the permit page and paraphrased outside evidence instead.</p>
+  </footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => n == null ? "–" : Number(n).toLocaleString("en-US");
+const pct = x => Math.round(x * 100) + "%";
+const CHECK = {ok: ["ok", "Matches conditions"], incomplete: ["held", "IDs missing"], no_reference: ["plain", "No IDs to compare"]};
+const CHECK_NAMES = {count_words_match_digits: "count words and digits disagree", ref_ids_match_count: "unit IDs don't add up to the count",
+  has_manufacturer: "no manufacturer", has_electrical_rating: "no rating", has_count: "no count", ids_unique: "duplicate unit ID"};
+let D, filter = "all", sortK = "gens_ok", sortDir = -1, open = new Set();
+
+function company(s) { return s.links.map(l => l.company).join(", "); }
+function render() {
+  const q = $("#q").value.trim().toLowerCase();
+  const unitText = {};
+  for (const u of D.units) unitText[u.site] = (unitText[u.site] || "") + " " + [u.maker, u.model].join(" ");
+  let rows = D.sites.filter(s => {
+    if (filter === "ne" && !s.non_emergency) return false;
+    if (filter === "held" && !s.gens_held) return false;
+    if (filter === "inferred" && !s.links.some(l => l.link_type === "inferred" || l.rule === "public_record")) return false;
+    if (!q) return true;
+    return [s.name, s.applicant, company(s), s.locality, s.region, s.id, unitText[s.id]].join(" ").toLowerCase().includes(q);
+  });
+  rows.sort((a, b) => {
+    const x = sortK === "company" ? company(a) : a[sortK], y = sortK === "company" ? company(b) : b[sortK];
+    if (typeof x === "number" || typeof y === "number") return sortDir * ((x ?? -1) - (y ?? -1));
+    return sortDir * String(x ?? "").localeCompare(String(y ?? ""));
+  });
+  $("#count").textContent = `${rows.length} of ${D.sites.length} sites`;
+  const body = $("#sites tbody");
+  body.innerHTML = rows.map(s => {
+    const [cls, label] = CHECK[s.check] || ["plain", "–"];
+    const links = s.links.map(l => `${esc(l.company)} <span class="link-type">${l.rule === "public_record" ? "· from outside records" : ""}</span>`).join("<br>") || `<span class="ssub">Unresolved</span>`;
+    const tags = [s.non_emergency ? `<span class="pill warn">${fmt(s.non_emergency)} non-emergency</span>` : "",
+                  s.gens_held ? `<span class="pill held">${fmt(s.gens_held)} held</span>` : ""].filter(Boolean).join(" ");
+    const isOpen = open.has(s.id);
+    return `<tr class="siterow" tabindex="0" data-id="${esc(s.id)}" aria-expanded="${isOpen}">
+      <td><div class="sname">${esc(s.name)}</div><div class="ssub">${esc(s.id)} ${tags}</div></td>
+      <td>${links}</td>
+      <td>${esc(s.locality || "")}<div class="ssub">${esc(s.region || "")}</div></td>
+      <td class="num">${esc(s.issued || "–")}</td>
+      <td class="r num">${fmt(s.gens_ok)}</td>
+      <td class="r num">${s.mw_ok ? s.mw_ok.toLocaleString("en-US", {maximumFractionDigits: 1}) : "–"}</td>
+      <td><span class="pill ${cls}">${label}${s.check === "incomplete" ? ` (${s.missing_ids})` : ""}</span></td>
+    </tr>${isOpen ? detail(s) : ""}`;
+  }).join("") || `<tr><td colspan="7" style="padding:24px;color:var(--muted)">No sites match. Try a company name like Amazon or an engine maker like Cummins.</td></tr>`;
+  document.querySelectorAll("#sites th").forEach(th => {
+    if (th.dataset.k === sortK) th.setAttribute("aria-sort", sortDir < 0 ? "descending" : "ascending"); else th.removeAttribute("aria-sort");
+  });
+}
+
+function detail(s) {
+  const us = D.units.filter(u => u.site === s.id);
+  const ev = s.links.flatMap(l => [
+    l.permit_page ? `<li>${esc(l.company)}: named in the permit${s.doc_url ? `, <a href="${esc(s.doc_url)}#page=${l.permit_page}" target="_blank" rel="noopener">page ${l.permit_page} ↗</a>` : ` (page ${l.permit_page})`}</li>` : "",
+    ...l.evidence.map(e => `<li>${esc(l.company)}: ${esc(e.claim || "")}${e.url ? ` <a href="${esc(e.url)}" target="_blank" rel="noopener">source ↗</a>` : ""}</li>`)
+  ]).filter(Boolean).join("");
+  const rows = us.map(u => {
+    const why = u.failed_checks.map(c => CHECK_NAMES[c] || c.replaceAll("_", " ")).join("; ");
+    const st = u.status === "ok" ? `<span class="pill ok">ok</span>` : `<span class="pill held">held</span>${why ? `<span class="why">${esc(why)}</span>` : ""}`;
+    const rating = u.kw ? `${fmt(Math.round(u.kw))} kW${u.assumption ? ` <span class="ssub">(${esc(u.assumption)})</span>` : ""}` : "–";
+    const page = u.page ? (u.doc_url ? `<a href="${esc(u.doc_url)}#page=${u.page}" target="_blank" rel="noopener">p. ${u.page} ↗</a>` : `p. ${u.page}`) : "–";
+    return `<tr class="${u.counted ? "" : "dim"}">
+      <td class="ids">${esc(u.ids)}</td><td class="r num">${fmt(u.count)}</td>
+      <td>${esc([u.maker, u.model].filter(Boolean).join(" ") || "–")}</td>
+      <td class="num">${rating}</td><td>${esc((u.class || "–").replaceAll("_", " "))}</td>
+      <td>${u.duty === "non_emergency" ? `<span class="pill warn">non-emergency</span>` : esc(u.duty || "–")}</td>
+      <td>${esc(u.section || "–")}</td><td>${st}</td><td class="num">${page}</td></tr>`;
+  }).join("");
+  return `<tr class="detail"><td colspan="7"><div class="detail-in">
+    ${ev ? `<p class="kicker" style="margin-bottom:6px">Company link</p><ul class="evid">${ev}</ul>` : ""}
+    <p class="kicker" style="margin-bottom:6px">Equipment rows, as read from the permit</p>
+    <div style="overflow-x:auto">${us.length ? `<table class="units"><thead><tr><th>Unit IDs</th><th class="r">Count</th><th>Maker and model</th><th>Rating</th><th>Type</th><th>Duty</th><th>In permit as</th><th>Status</th><th>Source</th></tr></thead><tbody>${rows}</tbody></table>`
+      : `<p class="note">No current rows: a later fix to the extractor retracted this site's earlier rows.</p>`}</div>
+  </div></td></tr>`;
+}
+
+function toggle(id) { open.has(id) ? open.delete(id) : open.add(id); render(); }
+
+async function main() {
+  try {
+    D = await (await fetch("data.json", {cache: "no-cache"})).json();
+  } catch (e) {
+    $("#count").textContent = "Couldn't load the data. Refresh to try again.";
+    return;
+  }
+  const S = D.summary, st = $("#stats").querySelectorAll("b");
+  st[0].textContent = fmt(S.gens_ok); st[1].textContent = S.gw_ok.toFixed(1) + " GW";
+  st[2].textContent = `${S.sites_with_ok} of ${S.sites}`; st[3].textContent = fmt(S.non_emergency); st[4].textContent = fmt(S.gens_held);
+  $("#evalt tbody").innerHTML = D.eval.map(r => `<tr><td>${esc(r.round)}</td><td class="r num">${r.permits}</td>
+    <td class="num"><span class="meter"><i style="width:${pct(r.rows_found)}"></i></span>${pct(r.rows_found)}</td>
+    <td class="num"><span class="meter"><i style="width:${pct(r.rows_correct)}"></i></span>${pct(r.rows_correct)}</td></tr>`).join("");
+  const top = D.makers.slice(0, 6);
+  $("#makers").innerHTML = top.map(m => `<li><span>${esc(m.maker)}</span><span class="bar"><i style="width:${(m.share / top[0].share * 100).toFixed(1)}%"></i></span>
+    <span class="v">${m.share < 0.005 ? "<1%" : pct(m.share)} · ${fmt(Math.round(m.mw))} MW</span></li>`).join("");
+  $("#built").textContent = `${S.permits_read} of the ${S.permits_listed} data center permits DEQ lists, read and exported ${new Date(D.built_at).toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"})}.`;
+  render();
+}
+
+$("#q").addEventListener("input", render);
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+  filter = b.dataset.f;
+  document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  render();
+}));
+document.querySelectorAll("#sites th").forEach(th => th.addEventListener("click", () => {
+  const k = th.dataset.k;
+  if (sortK === k) sortDir = -sortDir; else { sortK = k; sortDir = ["gens_ok", "mw_ok", "issued"].includes(k) ? -1 : 1; }
+  render();
+}));
+$("#sites tbody").addEventListener("click", e => {
+  if (e.target.closest("a")) return;
+  const tr = e.target.closest(".siterow"); if (tr) toggle(tr.dataset.id);
+});
+$("#sites tbody").addEventListener("keydown", e => {
+  const tr = e.target.closest(".siterow");
+  if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(tr.dataset.id); }
+});
+main();
+</script>
+</body>
+</html>

@@ -8,6 +8,10 @@ permit, with the evidence for that link.
 
 The write-up of what the data shows is in [FINDINGS.md](FINDINGS.md).
 
+**[Browse every generator →](https://anoopibrampur.github.io/permit-pipeline/)** A searchable
+explorer of the current records: each site's equipment rows, their checks, the company
+link and the permit page each row came from.
+
 ## What came out of it
 
 From 47 of the 194 permits DEQ lists (46 sites):
@@ -85,13 +89,16 @@ permitpipe extract                 # unit records, checks, cross-check
 permitpipe owners                  # site -> company links
 permitpipe eval --set test3        # score against hand labels (dev | test | test2 | test3)
 permitpipe extract --mode hybrid   # rules first, local LLM only where the rules fall short
+permitpipe site                    # export current records to site/data.json for the explorer
 ```
 
 `permitpipe tx-pull` fetches the Texas TCEQ list of pending air permit applications,
 which robots.txt allows. Texas is collected but not extracted yet.
 
 Downloaded documents, page text and the SQLite database live in `data/`, which is not
-committed.
+committed. The explorer in `site/` is the exception: `permitpipe site` writes the current records
+(no cover-letter text) to `site/data.json`, which is committed and published to GitHub Pages
+by `.github/workflows/pages.yml`.
 
 ## Layout
 
@@ -103,11 +110,12 @@ src/permitpipe/
   extract.py    equipment rows, ID lists, checks, cross-check, versioned loading
   owners.py     cover letters, company links, evidence rules
   evaluate.py   scoring against hand labels
+  site.py       static explorer export (site/)
   units.py      kW conversion
   sources/      va_deq.py, tx_tceq.py
 eval/           samples, hand labels and results for each round
 research/       hand-researched ownership evidence
-tests/          68 tests, many built from real permit text
+tests/          69 tests, many built from real permit text
 ```
 
 ## Known gaps
